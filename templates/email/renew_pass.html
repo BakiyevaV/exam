@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Регистрация</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css">
+</head>
+<body style="display: flex; flex-direction: column;align-items: center;margin-top: 200px;">
+    <p>Уважаемый {{ user }}, от вашего пользователя поступил запрос на сброс пароля.<br>Если вы действительно желаете
+    сбросить пароль, нажмите на кнопку ниже.<br> Если нет, то проигнорируйте это письмо</p>
+    <a href="http://localhost:8000/authorization/new_pass/{{pk}}"><button>Получить новый пароль</button></a>
+</body>

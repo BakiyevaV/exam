@@ -1,0 +1,39 @@
+{% extends "layout/basic.html" %}
+{% load static %}
+{% load thumbnail %}
+{% load custom_filters %}
+
+{% block content %}
+	<div class="main_wrapper">
+		<h3 class="color-white">Публикации автора: {{ request.user }}</h3>
+		<table class="color-white my-table">
+			<thead>
+				<tr>
+					<th>Дата посл.изменений:</th>
+					<th>Категория:</th>
+					<th>Наименование:</th>
+					<th>Изображение:</th>
+				</tr>
+			</thead>
+			<tbody>
+				{% for article in articles %}
+					<tr class="article_row" data-my-article-id="{{ article.pk }}" onclick="row_link(this)">
+						<td>{{article.updated}}</td>
+						<td>{{ article.category.name }}</td>
+						<td>{{ article.title }}</td>
+						<td>
+							{% if article.images != 'None'%}
+								{% with article.images.first as image %}
+									{% if image %}
+										<img src="{% thumbnail image.image 'for_table' %}">
+									{% endif %}
+								{% endwith %}
+							{% endif %}
+						</td>
+					</tr>
+				{% endfor %}
+			</tbody>
+		</table>
+	</div>
+<script src="{% static 'index.js'%}"></script>
+{% endblock %}

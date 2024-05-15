@@ -1,0 +1,45 @@
+{% extends "layout/basic.html" %}
+{% load thumbnail %}
+{% load static %}
+
+{% block content %}
+	<form class="user_info_form" method="post" action="{% url 'user:private' user.pk %}" enctype="multipart/form-data">
+		{% if messages %}
+			{% for message in messages %}
+				<div class="alert alert-{{ message.tags }}">
+					{{ message }}
+				</div>
+			{% endfor %}
+		{% endif %}
+		<h3>{{ user.username }}</h3>
+		<div class="photo">
+   			<img id="photo" src="{% thumbnail custom_user.photo 'medium' %}">
+		</div>
+		{% csrf_token %}
+		{{ form1.as_p }}
+		{{ form2.as_p }}
+<!--		<p hidden="true" id="pk">{{ user.pk }}</p>-->
+<!--		<input class="user_form_input" type="file" id="photo">-->
+<!--		<div>-->
+<!--			<label class="form-check-label" for="username">Имя:</label>-->
+<!--			<input class="user_form_input" type="text" placeholder="Имя" value="{% if user.first_name %}{{ user.first_name }}{% endif %}" id="username">-->
+<!--		</div>-->
+<!--		<div>-->
+<!--			<label class="form-check-label" for="last_name">Фамилия:</label>-->
+<!--			<input class="user_form_input" type="text" placeholder="Фамилия" value="{% if user.last_name %}{{ user.last_name }}{% endif %}" id="last_name">-->
+<!--		</div>-->
+<!--		<div>-->
+<!--			<label class="form-check-label" for="b_date">Дата рождения:</label>-->
+<!--			<input class="user_form_input" type="date" placeholder="дата рождения" value="{% if custom_user.birthdate %}{{ custom_user.birthdate|date:'Y-m-d' }}{% endif %}" id="b_date">-->
+<!--		</div>-->
+<!--		<div>-->
+<!--			<label class="form-check-label" for="phone">телефона:</label>-->
+<!--			<input class="user_form_input" type="text" placeholder="Номер телефона" value="{% if user.phone %}{{ user.phone }}{% endif %}" id="phone">-->
+<!--		</div>-->
+		<div>
+			<button class="btn btn-primary btn-form" >Отменить</button>
+			<button type="submit" class="btn btn-success btn-form" id="save">Обновить</button>
+		</div>
+	</form>
+<!--	<script src="{% static 'private.js'%}"></script>-->
+{% endblock %}

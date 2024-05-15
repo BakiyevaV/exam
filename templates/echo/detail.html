@@ -1,0 +1,170 @@
+{% extends "layout/basic.html" %}
+{% load static %}
+{% load thumbnail %}
+{% load custom_filters %}
+
+{% block content %}
+	<div class="main_wrapper">
+		<div class="article-detail flex-column-center">
+			<div class="upper_section">
+				<div class="flex-row-start">
+					<div class="mini_av" >
+						<img src="{% thumbnail articles.author.customusermodel.photo 'mini' %}">
+					</div>
+					<div>{{ articles.author.username }}</div>
+					<div>{{ articles.updated }}</div>
+				</div>
+				{% if request.user.is_authenticated %}
+					{% if is_liked %}
+						{% if articles.author.pk != request.user.pk %}
+							<div data-like='true' data-article-id="{{ articles.pk }}" onclick="takeLike(this)">
+								<i class="fa-solid fa-heart fa-xl" style="color: #e12323;"></i>
+							</div>
+						{% else %}
+							<div data-like='false'  data-article-id="{{ articles.pk }}" onclick="takeLike(this)">
+								<i class="fa-regular fa-heart fa-xl" style="color: #d3d5d9;"></i>
+							</div>
+						{% endif %}
+					{% endif %}
+				{% else %}
+					<a href="" data-bs-toggle="modal" data-bs-target="#authorization">
+						<i class="fa-regular fa-heart fa-xl" style="color: #d3d5d9;"></i>
+					</a>
+				{% endif %}
+			</div>
+			<div class="full-width padding-medium left-sided">
+				<h4>{{ articles.title }}</h4>
+			</div>
+			<hr>
+			<div class="article_image">
+					{% with articles.images.first as image %}
+						{% if image %}
+							<img src="{% thumbnail image.image 'article' %}" alt="Image for {{ articles.title }}">
+						{% endif %}
+					{% endwith %}
+			</div>
+			<div class="full-width padding-medium" data-detail_id="{{ articles.pk }}" id="article_content"> {{ articles.content|safe }}</div>
+			<div class="article_tags">
+				{% for tag in articles.tags %}
+					<div class="tag-wrapper">#{{ tag }}</div>
+				{% endfor %}
+			</div>
+			<hr>
+			<div class="article_statistic">
+				<div class="icons">
+					<div>
+						<i id="comments_count" class="fa-solid fa-message" style="color: #d3d5d9;"></i>
+						<label for="comments_count">{{ comments_count }}</label>
+					</div>
+					<div>
+						<i id="eye" class="fa-solid fa-eye" style="color: #d3d5d9;"></i>
+						<label for="eye" id="view_count">{{ views }}</label>
+					</div>
+					{% if request.user.is_authenticated %}
+						{% if is_saved %}
+								<i class="fa-solid fa-bookmark" style="color: #0d6efd;"></i>
+							{% else %}
+								<form action="{% url 'echo:save_article' pk=articles.pk user_id=request.user.pk %}" method="post">
+									{% csrf_token %}
+									<button type="submit" style="background: none; border: none; padding: 0;">
+										<i class="fa-solid fa-bookmark" style="color: #d3d5d9;"></i>
+									</button>
+								</form>
+						{% endif %}
+					{% else %}
+						<a href="" data-bs-toggle="modal" data-bs-target="#authorization">
+							<i class="fa-solid fa-bookmark" style="color: #d3d5d9;"></i>
+						</a>
+					{% endif %}
+				</div>
+				{% if request.user.is_authenticated %}
+					{% if articles.author.pk != request.user.pk %}
+						<div class="emotions">
+							<li class="nav-item dropdown">
+								<a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+									<i class="fa-solid fa-face-smile fa-xl" style="color: #d3d5d9;"></i>
+									Эмоции
+								</a>
+								<ul class="dropdown-menu emotions-menu">
+									{% for emotion in emojies %}
+										<button class="emoji-btn" data-isEmoji="false" onclick="add_emoji(this)" name="{{ emotion.name }}" data-emoji_id="{{ emotion.pk }}" data-article-id="{{ articles.pk }}">
+											<img style="width: 30px; height: 30px;" src="{% static emotion.image_path %}" id="img-{{ emotion.name }}">
+											<label for="img-{{ emotion.name }}" id="label-{{ emotion.name }}">{{ emotions_count|get_item:emotion.name|default:"0" }}</label>
+										</button>
+									{% endfor %}
+								</ul>
+							</li>
+						</div>
+					{% endif %}
+				{% else %}
+				<div class="emotions">
+					<a class="nav-link dropdown-toggle" data-bs-toggle="modal" data-bs-target="#authorization">
+						<i class="fa-solid fa-face-smile fa-xl" style="color: #d3d5d9;"></i>
+						Эмоции
+					</a>
+				</div>
+				{% endif %}
+			</div>
+		</div>
+	</div>
+	{% if request.user.is_authenticated  %}
+		<form class="comments_form" method="post" action="{% url 'echo:save_comment' articles.pk %}">
+			{% csrf_token %}
+			<span>Введите текст комментария:</span>
+			<textarea class="comment_area" id="comment_area" name="content"></textarea>
+			<div>
+				<button class="btn btn-primary btn-form" type="reset">Отмена</button>
+				<button class="btn btn-success btn-form" type="submit">Добавить комментарий</button>
+			</div>
+		</form>
+	{% endif %}
+	{% for comment in comments %}
+    {% if comment.parent is None %}
+        <div class="comment" name="visible_comment">
+            <div class="flex-row-start">
+                <div class="mini_av" >
+                    <img src="{% thumbnail comment.author.customusermodel.photo 'mini' %}">
+                </div>
+                <div>{{ comment.author.username }} ({{ comment.updated }})</div>
+            </div>
+			<div>
+				<div class="comment_text">{{ comment.content }}
+					<a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+						Ответить
+					</a>
+					<ul class="dropdown-menu dropdown-menu-end">
+						<form class="added_comment_form" method="post" action="{% url 'echo:save_comment' articles.pk %}">
+							{% csrf_token %}
+							<textarea class="added_comment_textarea" name="content"></textarea>
+							<input name="parent" value="{{ comment.pk }}" hidden="true">
+							<div>
+								<button class="btn btn-success" type="submit">Добавить</button>
+								<button class="btn btn-primary" type="reset">Отмена</button>
+							</div>
+						</form>
+					</ul>
+					<a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+						Показать ответы <span>({{ comment.children.count }})</span>
+					</a>
+					<ul class="dropdown-menu dropdown-menu-end menu-bg">
+						{% for child in comment.children.all %}
+						<div class="children_comment">
+							 <div class="flex-row-start">
+								<div class="mini_av" >
+									<img src="{% thumbnail comment.author.customusermodel.photo 'mini' %}">
+								</div>
+								<div>{{ comment.author.username }} ({{ comment.updated }})</div>
+							</div>
+							<p>{{ child.content }}</p>
+						</div>
+						{% endfor %}
+					</ul>
+				</div>
+			</div>
+		</div>
+    {% endif %}
+	{% endfor %}
+	</div>
+	<script src="{% static 'index.js'%}"></script>
+	<script src="{% static 'detail.js'%}"></script>
+{% endblock %}

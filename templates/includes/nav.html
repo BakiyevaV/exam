@@ -1,0 +1,84 @@
+{% load static %}
+{% load thumbnail %}
+
+<nav class="navbar navbar-expand-lg bg-body-tertiary">
+	<div class="container-fluid">
+	  <a class="navbar-brand" href="#">
+		  <img src="{% static 'img/logo.png' %}" alt="Bootstrap" width="30" height="30">
+	  </a>
+	  <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
+			  aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+		  <span class="navbar-toggler-icon"></span>
+	  </button>
+	  <div class="collapse navbar-collapse" id="navbarSupportedContent">
+		  <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+			  <li class="nav-item">
+			  <a class="nav-link active" aria-current="page" href="{% url 'echo:index' %}">Главная</a>
+		  </li>
+		  <li class="nav-item">
+			  <a class="nav-link" href="{% url 'echo:top20' %}">Топ-20</a>
+		  </li>
+		  <li class="nav-item">
+			  <a class="nav-link" href="{% url 'echo:recent' %}">Свежее</a>
+		  </li>
+		  <li class="nav-item dropdown">
+			  <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+				Категории
+			  </a>
+			  <ul class="dropdown-menu">
+				  {% for category in request.categories %}
+					<li><a class="dropdown-item" href="{% url 'echo:by_category' category.pk %}">{{ category }}</a></li>
+				  {% endfor %}
+				  <li><a class="dropdown-item" href="#">Something else here</a></li>
+			  </ul>
+		  </li>
+		  {% if request.user.is_authenticated %}
+		  <li class="nav-item">
+			  <a class="nav-link" href="{% url 'echo:create' %}" id="create_article">Создать публикацию</a>
+		  </li>
+		  {% else %}
+		  <li class="nav-item">
+			  <a class="nav-link have-tooltip"  data-bs-toggle="tooltip" title="Доступно после авторизации">Создать публикацию</a>
+		  </li>
+		   {% endif %}
+		</ul>
+		<form class="d-flex search" role="search" action="{% url 'echo:search' %}">
+			{% csrf_token %}
+			<input class="form-control me-2" type="search" name="search" placeholder="Search" aria-label="Search">
+			<button class="btn btn-outline-success" type="submit">Search</button>
+		</form>
+		<div class="user" id = "user">
+			<div class="avatar">
+				{% if request.user.is_authenticated %}
+                  	<img src="{% thumbnail request.user_profile.photo 'small' %}" alt="Avatar" class="avatar">
+				{% else %}
+			  		<i class="far fa-user"></i>
+				{% endif %}
+			</div>
+			<li class="nav-item dropdown">
+				{% if request.user.is_authenticated %}
+					<a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" id="user_name">
+						{{ request.user.username }}
+				    </a>
+				  	<ul class="dropdown-menu dropdown-menu-end" id="user_dropdown">
+						<li><a class="dropdown-item" href="{% url 'user:private' request.user.pk %}">Личные данные</a></li>
+						<li><a class="dropdown-item" href="{% url 'echo:my_articles' %}">Мои публикации</a></li>
+						<li><a class="dropdown-item" href="#">Мои подписки</a></li>
+						<li><a class="dropdown-item" href="{% url 'echo:my_likes' %}">Понравившееся</a></li>
+						<li><a class="dropdown-item" href="{% url 'echo:my_comments' %}">Мои комментарии</a></li>
+						<li><hr class="dropdown-divider"></li>
+						<li onclick="exit()"><a class="dropdown-item" id="exit">Выйти</a></li>
+				  	</ul>
+				{% else %}
+					<a class="nav-link" data-bs-toggle="tooltip" title="Авторизуйтесь" role="button" aria-expanded="false">
+						Гость
+					</a>
+				{% endif %}
+			</li>
+		</div>
+	  {% if not request.user.is_authenticated %}
+		<button class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#authorization" id="enter">Вход</button>
+	  {% endif %}
+	  </div>
+	</div>
+</nav>

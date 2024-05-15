@@ -1,0 +1,156 @@
+{% extends "layout/basic.html" %}
+{% load static %}
+{% load thumbnail %}
+{% load custom_filters %}
+
+{% block content %}
+	<div class="main_wrapper">
+		{% if page_title %}
+			<h3 class="color-white">{{ page_title }}</h3>
+		{% endif %}
+		{% for article in articles %}
+			<div class="article flex-column-center">
+				<div class="upper_section">
+					<div class="flex-row-start">
+						<div class="mini_av" >
+							<img src="{% thumbnail article.author.customusermodel.photo 'mini' %}">
+						</div>
+						<li class="nav-item dropdown">
+							{% if article.author.pk != request.user.pk%}
+								{% if request.user.is_authenticated %}
+										<a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+											{{ article.author.username }}
+										</a>
+										<ul class="dropdown-menu dropdown-menu-end">
+											{% if article.author.pk not in subscriptions %}
+												{% if article.author.pk not in ignores %}
+												   <li class="subscribe"><a class="dropdown-item " data-user_id='{{ request.user.pk }}'
+														   data-aut_id='{{ article.author.pk }}'>Подписаться</a></li>
+												{% else %}
+													<li class="subscribe" hidden="True"><a class="dropdown-item " data-user_id='{{ request.user.pk }}'
+														   data-aut_id='{{ article.author.pk }}'>Подписаться</a></li>
+												{% endif %}
+											{% else %}
+												<li class="subscribe"><a class="dropdown-item" data-user_id='{{ request.user.pk }}'
+												   data-aut_id='{{ article.author.pk }}'>Отписаться</a></li>
+											{% endif %}
+											{% if article.author.pk not in ignores %}
+												{% if article.author.pk not in subscriptions %}
+												<li class="ignor"><a class="dropdown-item" data-user_id='{{ request.user.pk }}'
+														   data-aut_id='{{ article.author.pk }}'>Игнорировать</a></li>
+												{% else %}
+												<li class="ignor" hidden="True"><a class="dropdown-item" data-user_id='{{ request.user.pk }}'
+															   data-aut_id='{{ article.author.pk }}'>Игнорировать</a></li>
+												{% endif %}
+											{% else %}
+												<li class="ignor"><a class="dropdown-item" data-user_id='{{ request.user.pk }}'
+													   data-aut_id='{{ article.author.pk }}'>Отменить игнор</a></li>
+											{% endif %}
+										</ul>
+								{% else %}
+									<a href="" data-bs-toggle="modal" data-bs-target="#authorization">
+										{{ article.author.username }}
+									</a>
+								{% endif %}
+							{% else %}
+								<div>{{ article.author.username }}</div>
+							{% endif %}
+						</li>
+						<div>{{ article.updated|custom_timesince }} </div>
+						<div>Категория: <a href="{% url 'echo:by_category' article.category.pk %}">{{ article.category.name }}</a> </div>
+					</div>
+					{% if request.user.is_authenticated %}
+						{% if article.pk in liked_articles %}
+							<div data-like='true' data-article-id="{{ article.pk }}" onclick="takeLike(this)">
+								<i class="fa-solid fa-heart fa-xl" style="color: #e12323;"></i>
+							</div>
+						{% else %}
+							<div data-like='false'  data-article-id="{{ article.pk }}" onclick="takeLike(this)">
+								<i class="fa-regular fa-heart fa-xl" style="color: #d3d5d9;"></i>
+							</div>
+						{% endif %}
+					{% else %}
+						<a href="" data-bs-toggle="modal" data-bs-target="#authorization">
+							<i class="fa-regular fa-heart fa-xl" style="color: #d3d5d9;"></i>
+						</a>
+					{% endif %}
+				</div>
+				<div class="full-width padding-medium left-sided">
+					<a href="{% url 'echo:article_detail' article.pk %}">
+						<h4>{{ article.title }}</h4>
+					</a>
+				</div>
+				<hr>
+				<div class="article_image">
+					    {% with article.images.first as image %}
+							{% if image %}
+								<img src="{% thumbnail image.image 'article' %}" alt="Image for {{ article.title }}">
+							{% endif %}
+						{% endwith %}
+				</div>
+				<div class="full-width padding-medium" data-detail_id="{{ article.pk }}"> {{ article.content|truncate_more:100|safe }}</div>
+				<div class="article_tags">
+					{% for tag in article.tags %}
+						<div class="tag-wrapper">#{{ tag }}</div>
+					{% endfor %}
+				</div>
+				<hr>
+				<div class="article_statistic">
+					<div class="icons">
+						<div>
+							<i id="comments" class="fa-solid fa-message" style="color: #d3d5d9;"></i>
+							<label for="comments">{{ article.comments_count }}</label>
+						</div>
+						<div>
+							<i id="eye" class="fa-solid fa-eye" style="color: #d3d5d9;"></i>
+							<label for="eye">{{ article.views_count }}</label>
+						</div>
+						{% if request.user.is_authenticated %}
+							{% if article.pk in saved_articles %}
+								<i class="fa-solid fa-bookmark" style="color: #0d6efd;"></i>
+							{% else %}
+								<form action="{% url 'echo:save_article' pk=article.pk user_id=request.user.pk %}?next={{ request.path }}" method="post">
+									{% csrf_token %}
+									<button type="submit" style="background: none; border: none; padding: 0;">
+										<i class="fa-solid fa-bookmark" style="color: #d3d5d9;"></i>
+									</button>
+								</form>
+							{% endif %}
+						{% else %}
+							<a href="" data-bs-toggle="modal" data-bs-target="#authorization">
+								<i class="fa-solid fa-bookmark" style="color: #d3d5d9;"></i>
+							</a>
+						{% endif %}
+					</div>
+					{% if request.user.is_authenticated %}
+						<div class="emotions">
+							<li class="nav-item dropdown">
+								<a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+									<i class="fa-solid fa-face-smile fa-xl" style="color: #d3d5d9;"></i>
+									Эмоции
+								</a>
+								<ul class="dropdown-menu emotions-menu">
+									{% for emotion in emojies %}
+										<button class="emoji-btn" data-isEmoji="false" onclick="add_emoji(this)" name="{{ emotion.name }}" data-emoji_id="{{ emotion.pk }}" data-article-id="{{ article.pk }}">
+											<img style="width: 30px; height: 30px;" src="{% static emotion.image_path %}" id="img-{{ emotion.name }}">
+											<label for="img-{{ emotion.name }}" id="label-{{ emotion.name }}">{{ emotions_count|get_item:article.pk|get_item:emotion.name|default:"0" }}</label>
+										</button>
+									{% endfor %}
+								</ul>
+							</li>
+						</div>
+					{% else %}
+					<div class="emotions">
+						<a class="nav-link dropdown-toggle" data-bs-toggle="modal" data-bs-target="#authorization">
+							<i class="fa-solid fa-face-smile fa-xl" style="color: #d3d5d9;"></i>
+							Эмоции
+						</a>
+					</div>
+					{% endif %}
+				</div>
+			</div>
+		{% endfor %}
+	</div>
+	{% paginate %}
+<script src="{% static 'index.js'%}"></script>
+{% endblock %}

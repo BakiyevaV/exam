@@ -1,0 +1,32 @@
+{% extends "layout/basic.html" %}
+{% load static %}
+
+{% block content %}
+	<form class="article_form" id="article_form" method="post" action="">
+		{% if messages %}
+			{% for message in messages %}
+				<div class="alert alert-{{ message.tags }}">
+					{{ message }}
+				</div>
+			{% endfor %}
+		{% endif %}
+		<h3>Создание публикации</h3>
+		<div class="flex-row">
+			<div class="photo">
+				<img style="height: 400px; width: 300px;" id="preview">
+			</div>
+			<div class="miniatures" id="miniatures"></div>
+		</div>
+		{% csrf_token %}
+		{{ form.as_p }}
+		<p>Теги:<input type="text" id="tag_area"><button type="button" class="btn btn-primary nowrap" id="add_tag">Добавить тег</button></p>
+		<div class="tags_line" id="tags_line"></div>
+		{{ image_form.as_p }}
+		<div>
+			<a><button type="reset" class="btn btn-primary btn-form" >Отменить</button></a>
+			<button type="submit" class="btn btn-success btn-form" id="create">Создать</button>
+		</div>
+	</form>
+	<script src="https://cdn.ckeditor.com/4.16.0/standard/ckeditor.js"></script>
+	<script src="{% static 'create_article.js'%}"></script>
+{% endblock %}
