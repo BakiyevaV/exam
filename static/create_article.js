@@ -2,7 +2,7 @@ CKEDITOR.replace('id_content');
 let image_array = []
 clearAlerts()
 
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", function() {s
     let imageInput = document.getElementById('id_image');
     if (imageInput) {
         imageInput.removeAttribute('required');
