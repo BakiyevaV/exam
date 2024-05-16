@@ -2,10 +2,12 @@ from datetime import datetime
 from os.path import splitext
 from django.core.exceptions import ValidationError
 from django.contrib.postgres.fields import ArrayField
+from django.core.mail import send_mail
 from django.db import models
 from django.conf import settings
 from django.contrib.postgres.search import SearchVector
-
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 def get_timestamp_path(instance, filename):
     return '%s%s' % (datetime.now().timestamp(), splitext(filename)[1])
 # Create your models here.
@@ -176,4 +178,19 @@ class IgnoreModel(models.Model):
         return f"{self.user} - {self.ignored_user}"
 
 
-
+@receiver(post_save, sender=Articles)
+def send_confirmation_notification(sender, instance, created, **kwargs):
+	if created:
+		author = instance.author
+		subscribers = SubscriptionModel.objects.filter(informator=author)
+		
+		emails = [sub.user.email for sub in subscribers if sub.user.email]
+		
+		if emails:
+			send_mail(
+				subject='Новая публикация от вашего автора',
+				message=f'Привет! {author.username} только что опубликовал новую статью: "{instance.title}". Приятного чтения!',
+				from_email=settings.DEFAULT_FROM_EMAIL,
+				recipient_list=emails,
+				fail_silently=False,
+			)

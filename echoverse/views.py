@@ -22,10 +22,22 @@ from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 
 def index(request):
-    article_list = Articles.objects.annotate(
-        comments_count=Count('post_comment'),
-        views_count=Count('viewsmodel')
-    )
+    if request.user.is_authenticated:
+        ignored_authors_ids = IgnoreModel.objects.filter(
+            user=request.user
+        ).values_list('ignored_user_id', flat=True)
+        
+        article_list = Articles.objects.exclude(
+            author_id__in=ignored_authors_ids
+        ).annotate(
+            comments_count=Count('post_comment', distinct=True),
+            views_count=Count('viewsmodel', distinct=True)
+        )
+    else:
+        article_list = Articles.objects.annotate(
+            comments_count=Count('post_comment'),
+            views_count=Count('viewsmodel')
+        )
     emojies = EmotionImage.objects.all()
 
     if request.user.is_authenticated:
@@ -497,7 +509,7 @@ class SubscriptionView(APIView):
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     def delete(self, request, *args, **kwargs):
         user = request.data.get('user')
@@ -519,15 +531,18 @@ class IgnoreView(APIView):
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     def delete(self, request, *args, **kwargs):
         user = request.data.get('user')
         ignored_user = request.data.get('ignored_user')
-        subscription = IgnoreModel.objects.get(user=user, ignored_user=ignored_user)
-        if not subscription:
+        print(user)
+        print(ignored_user)
+        ignore = IgnoreModel.objects.get(user=user, ignored_user=ignored_user)
+        print(ignore)
+        if not ignore:
             return Response({'error': 'Отсутствует такая подписка'}, status=status.HTTP_400_BAD_REQUEST)
-        subscription.delete()
+        ignore.delete()
         return Response({'success': 'Подписка удалена'}, status=status.HTTP_204_NO_CONTENT)
     
     

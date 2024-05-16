@@ -7,30 +7,24 @@ let username
 clearAlerts()
 
 let subscription = document.querySelector('.subscribe')
-let ignore  = document.querySelector('.ignor')
+let ignor  = document.querySelector('.ignor')
 console.log(subscription)
-console.log(ignore)
+console.log(ignor)
 if (subscription) {
-    if (subscription.innerHTML == 'Подписаться') {
-        subscription.addEventListener('click', async function (event){
-            Subscribe(event)
-        } )
+    if (subscription.querySelector('a').innerHTML == 'Подписаться') {
+        console.log('Подписаться')
+        subscription.setAttribute('onclick', 'Subscribe(this)');
     } else {
-      subscription.addEventListener('click', async function (event){
-            CancelSubscribe(event)
-        } )
+        console.log('Отписаться', subscription.innerHTML)
+      subscription.setAttribute('onclick', 'CancelSubscribe(this)');
     }
 }
 
-if (ignore) {
-    if (ignore.innerHTML == 'Игнорировать') {
-        ignore.addEventListener('click', async function (event) {
-            Ignore(event)
-        })
+if (ignor) {
+    if (ignor.querySelector('a').innerHTML == 'Игнорировать') {
+        ignor.setAttribute('onclick', 'Ignore(this)');
     } else {
-        ignore.addEventListener('click', async function (event) {
-            CancelIgnor(event)
-        })
+        ignor.setAttribute('onclick', 'CancelIgnor(this)');
     }
 }
 
@@ -254,10 +248,10 @@ async function getUserData(username, password){
     }
 }
 
-async function Subscribe(event){
+async function Subscribe(element){
     console.log('Подписываемся')
-    const user_id = event.target.getAttribute('data-user_id')
-    const author_id = event.target.getAttribute('data-aut_id')
+    const user_id = element.getAttribute('data-user_id')
+    const author_id = element.getAttribute('data-aut_id')
     const url = domain + `api/subscriptions/create/`;
     const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
     const token_acc = await refreshToken(localStorage.getItem('refreshToken'));
@@ -278,11 +272,13 @@ async function Subscribe(event){
       .then(data => {
           console.log(document.querySelector('.ignor'))
           if (!data.error){
-              event.target.innerHTML = `Отписаться`
-              event.target.setAttribute('onclick', `CancelSubscribe(this)`);
-              console.log(event.target)
-              if (ignore) {
-                  ignore.setAttribute('hidden', 'True')
+              element.querySelector('a').innerHTML = `Отписаться`
+              element.removeAttribute('onclick', 'Subscribe(this)')
+              element.setAttribute('onclick', 'CancelSubscribe(this)');
+              console.log(element)
+              if (ignor) {
+                  console.log('ignore',ignor)
+                  ignor.setAttribute('hidden', 'True')
               }
           }
       })
@@ -290,9 +286,10 @@ async function Subscribe(event){
 
 }
 
-async function Ignore(event){
-    const user_id = event.target.getAttribute('data-user_id')
-    const author_id = event.target.getAttribute('data-aut_id')
+async function Ignore(element){
+    console.log('Игнорим')
+    const user_id = element.getAttribute('data-user_id')
+    const author_id = element.getAttribute('data-aut_id')
     const url = domain + `api/ignore/create/`;
     const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
     const token_acc = await refreshToken(localStorage.getItem('refreshToken'));
@@ -312,10 +309,12 @@ async function Ignore(event){
     }).then(response => response.json())
       .then(data => {
           if (!data.error){
-              event.target.innerHTML = `Отменить игнор`
-              event.target.setAttribute('onclick', `CancelIgnore(this)`);
-              console.log(event.target)
+              element.querySelector('a').innerHTML = `Отменить игнор`
+              element.removeAttribute('onclick', 'Ignore(this)')
+              element.setAttribute('onclick', 'CancelIgnor(this)');
+              console.log(element)
               if(subscription){
+                  console.log('subscription',subscription)
                   subscription.setAttribute('hidden', 'True')
               }
           }
@@ -324,10 +323,10 @@ async function Ignore(event){
 
 }
 
-async function CancelSubscribe(event){
+async function CancelSubscribe(element){
     console.log('Отписываемся')
-    const user_id = event.target.getAttribute('data-user_id')
-    const author_id = event.target.getAttribute('data-aut_id')
+    const user_id = element.getAttribute('data-user_id')
+    const author_id = element.getAttribute('data-aut_id')
     const url = domain + `api/subscriptions/delete/`;
     const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
     const token_acc = await refreshToken(localStorage.getItem('refreshToken'));
@@ -351,11 +350,13 @@ async function CancelSubscribe(event){
     }).then(data => {
         console.log('Subscribe deleted:', data);
         if (!data.error) {
-            event.target.innerHTML = `Подписаться`
-            event.target.setAttribute('onclick', `Subscribe(this)`);
-            console.log(event.target)
-            if (ignore){
-                ignore.setAttribute('hidden', 'False')
+            element.querySelector('a').innerHTML = `Подписаться`
+            element.removeAttribute('onclick', 'CancelSubscribe(this)')
+            element.setAttribute('onclick', 'Subscribe(this)');
+            console.log(element)
+            if (ignor){
+                console.log('ignore',ignor)
+                ignor.removeAttribute('hidden', 'True')
             }
         }
       })
@@ -363,10 +364,11 @@ async function CancelSubscribe(event){
 
 }
 
-async function CancelIgnor(event){
-    console.log('Отписываемся')
-    const user_id = event.target.getAttribute('data-user_id')
-    const author_id = event.target.getAttribute('data-aut_id')
+async function CancelIgnor(element){
+    console.log('Отписываемся от игнора')
+    const user_id = element.getAttribute('data-user_id')
+    const author_id = element.getAttribute('data-aut_id')
+    console.log(user_id, author_id)
     const url = domain + `api/ignore/delete/`;
     const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
     const token_acc = await refreshToken(localStorage.getItem('refreshToken'));
@@ -390,11 +392,13 @@ async function CancelIgnor(event){
     }).then(data => {
         console.log('Subscribe deleted:', data);
         if (!data.error) {
-            event.target.innerHTML = `Игнорировать`
-            event.target.setAttribute('onclick', `Ignore(this)`);
-            console.log(event.target)
+            element.querySelector('a').innerHTML = `Игнорировать`
+            element.removeAttribute('onclick', 'CancelIgnor(this)')
+            element.setAttribute('onclick', 'Ignore(this)');
+            console.log(element)
             if(subscription){
-                subscription.setAttribute('hidden', 'False')
+                console.log('subscription',subscription)
+                subscription.removeAttribute('hidden', 'True')
             }
         }
       })

@@ -28,6 +28,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
 import logging
 
+
 logger = logging.getLogger(__name__)
 
 # Create your views here.

@@ -24,27 +24,28 @@
 										<ul class="dropdown-menu dropdown-menu-end">
 											{% if article.author.pk not in subscriptions %}
 												{% if article.author.pk not in ignores %}
-												   <li class="subscribe"><a class="dropdown-item " data-user_id='{{ request.user.pk }}'
-														   data-aut_id='{{ article.author.pk }}'>Подписаться</a></li>
+												   <li class="subscribe" data-user_id='{{ request.user.pk }}'
+														   data-aut_id='{{ article.author.pk }}'><a class="dropdown-item " >Подписаться</a></li>
 												{% else %}
-													<li class="subscribe" hidden="True"><a class="dropdown-item " data-user_id='{{ request.user.pk }}'
-														   data-aut_id='{{ article.author.pk }}'>Подписаться</a></li>
+													<li class="subscribe" hidden="True"
+													data-user_id='{{ request.user.pk }}'
+														   data-aut_id='{{ article.author.pk }}'><a class="dropdown-item ">Подписаться</a></li>
 												{% endif %}
 											{% else %}
-												<li class="subscribe"><a class="dropdown-item" data-user_id='{{ request.user.pk }}'
-												   data-aut_id='{{ article.author.pk }}'>Отписаться</a></li>
+												<li class="subscribe" data-user_id='{{ request.user.pk }}'
+														   data-aut_id='{{ article.author.pk }}' ><a class="dropdown-item">Отписаться</a></li>
 											{% endif %}
 											{% if article.author.pk not in ignores %}
 												{% if article.author.pk not in subscriptions %}
-												<li class="ignor"><a class="dropdown-item" data-user_id='{{ request.user.pk }}'
-														   data-aut_id='{{ article.author.pk }}'>Игнорировать</a></li>
+												<li class="ignor"data-user_id='{{ request.user.pk }}'
+														   data-aut_id='{{ article.author.pk }}' ><a class="dropdown-item">Игнорировать</a></li>
 												{% else %}
-												<li class="ignor" hidden="True"><a class="dropdown-item" data-user_id='{{ request.user.pk }}'
-															   data-aut_id='{{ article.author.pk }}'>Игнорировать</a></li>
+												<li class="ignor" hidden="True" data-user_id='{{ request.user.pk }}'
+														   data-aut_id='{{ article.author.pk }}'><a class="dropdown-item">Игнорировать</a></li>
 												{% endif %}
 											{% else %}
-												<li class="ignor"><a class="dropdown-item" data-user_id='{{ request.user.pk }}'
-													   data-aut_id='{{ article.author.pk }}'>Отменить игнор</a></li>
+												<li class="ignor" data-user_id='{{ request.user.pk }}'
+														   data-aut_id='{{ article.author.pk }}'><a class="dropdown-item">Отменить игнор</a></li>
 											{% endif %}
 										</ul>
 								{% else %}
