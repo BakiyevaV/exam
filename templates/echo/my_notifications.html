@@ -1,0 +1,29 @@
+{% extends "layout/basic.html" %}
+{% load static %}
+{% load thumbnail %}
+{% load custom_filters %}
+
+{% block content %}
+	<div class="main_wrapper">
+		<div class="title flex-row-between">
+			<img src="{% static 'img/sort.png' %}">
+			<h3 class="color-white">Мои уведомления:</h3>
+			<img id='settings' data-massages="{{ settings.send_messages }}" data-notifications="{{ settings.send_notification }}"
+				 src="{% static 'img/settings.png' %}">
+		</div>
+		{% for notification in notifications %}
+	  	<div class="my_comment">
+            <div class="flex-row-between">
+				<div>
+					<div >{{ notification.category.name }}:</div>
+					<div >{{ notification.title }}</div>
+					<a class="link more" onclick="getFullNotification(event)"> Подробнее...</a>
+					<div name="message" hidden>{{ notification.notification_text|safe  }}<a class="link less" onclick="reduceNotification(event)">  Скрыть...</a></div>
+				</div>
+				<div>{{ notification.send }}</div>
+            </div>
+		</div>
+		{% endfor %}
+	</div>
+<script src="{% static 'index.js'%}"></script>
+{% endblock %}

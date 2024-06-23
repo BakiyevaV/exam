@@ -16,7 +16,7 @@ def validate_file_extension(value):
         raise ValidationError('Недопустимый формат файла. Допускаются только .xls и .pdf файлы.')
 
 class CustomUserModel(models.Model):
-	user = models.OneToOneField(User, on_delete=models.CASCADE)
+	user = models.OneToOneField(User, on_delete=models.CASCADE )
 	phone = models.CharField(max_length=20, verbose_name='Номер телефона', null=True, blank=True)
 	birthdate = models.DateField(db_index=True, verbose_name='Дата рождения')
 	photo = models.ImageField(default='default.jpg', upload_to=get_timestamp_path, validators=[validate_file_extension], verbose_name='Фото')
@@ -24,7 +24,7 @@ class CustomUserModel(models.Model):
 	is_confirmed = models.BooleanField(default=False, verbose_name='Подтверждение регистрации')
 	
 	def __str__(self):
-		return self.user
+		return self.user.username
 	
 	class Meta:
 		verbose_name_plural = 'Пользователи'

@@ -54,6 +54,7 @@ class RegisterApi(generics.CreateAPIView):
 		print(context)
 		print(user.email)
 		letter = render_to_string('email/registration_letter.html', context)
+		
 		print(letter)
 		try:
 			send_mail(

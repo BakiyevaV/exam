@@ -63,9 +63,10 @@
 				  	<ul class="dropdown-menu dropdown-menu-end" id="user_dropdown">
 						<li><a class="dropdown-item" href="{% url 'user:private' request.user.pk %}">Личные данные</a></li>
 						<li><a class="dropdown-item" href="{% url 'echo:my_articles' %}">Мои публикации</a></li>
-						<li><a class="dropdown-item" href="#">Мои подписки</a></li>
+						<li><a class="dropdown-item" href="{% url 'echo:my_subscribes' %}">Мои подписки</a></li>
 						<li><a class="dropdown-item" href="{% url 'echo:my_likes' %}">Понравившееся</a></li>
 						<li><a class="dropdown-item" href="{% url 'echo:my_comments' %}">Мои комментарии</a></li>
+						<li><a class="dropdown-item" href="{% url 'echo:my_notifications' %}">Мои уведомления</a></li>
 						<li><hr class="dropdown-divider"></li>
 						<li onclick="exit()"><a class="dropdown-item" id="exit">Выйти</a></li>
 				  	</ul>

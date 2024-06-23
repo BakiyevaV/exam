@@ -106,3 +106,91 @@ function row_link(row){
     let id = row.getAttribute('data-my-article-id')
     window.location.href = domain + `/detail/${id}/`;
 }
+
+const settings = document.getElementById('settings')
+if(settings){
+    settings.addEventListener('click', openSettings)
+}
+
+
+function openSettings(){
+    const messages =settings.getAttribute('data-massages')
+    const notification =settings.getAttribute('data-notifications')
+    if (!document.querySelector('.settings-menu')){
+        console.log('openSettings')
+        const rect = settings.getBoundingClientRect()
+        let menu = document.createElement('div')
+        menu.innerHTML = `  <div class="flex-row-between">
+                                <label for="send_message">Отправлять письма</label>
+                                <input type="checkbox" name="send_message" id="send_message">
+                            </div>
+                            <div class="flex-row-between">
+                              <label for="send_notification">Отправлять уведомления</label>
+                               <input type="checkbox" name="send_notification" id="send_notification">
+                            </div>`
+        menu.className = 'settings-menu'
+        menu.classList.add('flex-column-center')
+        
+        console.log(menu.offsetWidth)
+        document.querySelector('.title').appendChild(menu)
+        menu.style.top  = (rect.top + window.scrollY + menu.offsetHeight / 2 + settings.offsetHeight/2) + 'px';
+        menu.style.left  = (rect.left + window.scrollX - menu.offsetWidth / 2 + settings.offsetWidth) + 'px';
+        
+        document.getElementById('send_message').checked = messages == 'True'? true : false
+        document.getElementById('send_notification').checked = notification == 'True'? true : false
+        document.getElementById('send_message').addEventListener('change', function (event){updateMessageSettings(event)})
+        document.getElementById('send_notification').addEventListener('change', function (event){updateMessageSettings(event)})
+    } else {
+        console.log('closeSettings')
+        if(document.querySelector('.settings-menu').style.display == 'none'){
+            document.querySelector('.settings-menu').style.display = 'block'
+        } else {
+            document.querySelector('.settings-menu').style.display = 'none'
+        }
+    }
+    
+}
+
+async function updateMessageSettings(event){
+    const sendMessages = document.getElementById('send_message').checked;
+    const sendNotification = document.getElementById('send_notification').checked;
+    const url = `${domain}/api/settings/`;
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    const token_acc = await refreshToken(localStorage.getItem('refreshToken'));
+    
+    const data = {
+        send_messages: sendMessages,
+        send_notification: sendNotification
+    };
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken,
+            'Authorization': `Bearer ${token_acc}`
+        },
+        body: JSON.stringify(data)
+    }).then(response => response.json())
+      .then(data => console.log('Settings updated:', data))
+        .catch(error => console.error('Error updating settings:', error));
+
+}
+
+function getFullNotification(event){
+    event.preventDefault()
+    const parent = event.target.parentElement
+    const message = parent.querySelector('[name="message"]')
+    console.log(event.target)
+    console.log(message)
+    message.removeAttribute('hidden')
+    event.target.closest(".more").setAttribute('hidden', 'True')
+
+}
+function reduceNotification(event){
+     event.preventDefault()
+    const message = event.target.parentElement
+    message.setAttribute('hidden', 'True')
+    const parent = message.parentElement
+    parent.querySelector('.more').removeAttribute('hidden')
+
+}

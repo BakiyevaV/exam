@@ -8,6 +8,12 @@ from django.conf import settings
 from django.contrib.postgres.search import SearchVector
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.urls import reverse
+from django.contrib.auth.models import User
+from django.templatetags.static import static
+from django.template.loader import render_to_string
+
+from account.models import CustomUserModel
 def get_timestamp_path(instance, filename):
     return '%s%s' % (datetime.now().timestamp(), splitext(filename)[1])
 # Create your models here.
@@ -97,7 +103,6 @@ class LikesModel(models.Model):
 	def __str__(self):
 		return f"{self.user} - {self.article}"
 
-
 class ViewsModel(models.Model):
 	article = models.ForeignKey('Articles', on_delete=models.CASCADE, verbose_name="Статья")
 	user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name="Пользователь")
@@ -130,6 +135,34 @@ class Comments(models.Model):
 	
 	def __str__(self):
 		return f"{self.author} - {self.content}"
+
+
+class NotificationCategories(models.Model):
+	name = models.CharField(max_length=100, db_index=True, verbose_name='Наименование категории', unique=True)
+	def __str__(self):
+		return self.name
+	class Meta:
+		verbose_name_plural = 'Категории уведомлений'
+		verbose_name = 'Категория уведомления'
+		ordering = ['name']
+
+class Notifications(models.Model):
+	category = models.ForeignKey('NotificationCategories', default=1, on_delete=models.PROTECT, verbose_name="Категория")
+	recipient = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, verbose_name="Получатель")
+	title = models.CharField(max_length=200, verbose_name="Заголовок")
+	notification_text = models.TextField(verbose_name="Текст уведомления")
+	send = models.DateTimeField(auto_now_add=True, db_index=True, verbose_name="Отправлено")
+	
+	class Meta:
+		verbose_name = "Уведомления"
+		verbose_name_plural = "Уведомление"
+	def __str__(self):
+		return f"{self.recipient} - {self.title}"
+	
+class MessagesSettings(models.Model):
+	user = models.OneToOneField(CustomUserModel, on_delete=models.CASCADE, verbose_name="Получатель", blank=True, null=True)
+	send_messages = models.BooleanField(default=True, verbose_name="Получать сообщения")
+	send_notification = models.BooleanField(default=True, verbose_name="Получать уведомления")
 
 
 class SavesModel(models.Model):
@@ -183,14 +216,138 @@ def send_confirmation_notification(sender, instance, created, **kwargs):
 	if created:
 		author = instance.author
 		subscribers = SubscriptionModel.objects.filter(informator=author)
+		category = NotificationCategories.objects.get(pk=1)
 		
-		emails = [sub.user.email for sub in subscribers if sub.user.email]
+		emails = []
+		for sub in subscribers:
+			settings = MessagesSettings.objects.filter(user=sub.user).first()
+			if settings and settings.send_messages and sub.user.email:
+				emails.append(sub.user.email)
+				
+		article_url = reverse("echo:article_detail", args=[instance.pk])  # или используйте метод reverse для генерации URL
 		
 		if emails:
 			send_mail(
 				subject='Новая публикация от вашего автора',
-				message=f'Привет! {author.username} только что опубликовал новую статью: "{instance.title}". Приятного чтения!',
+				message=f'Привет! {author.username} только что опубликовал новую статью: "<a href="{article_url}">{instance.title}</a>". Приятного чтения!',
 				from_email=settings.DEFAULT_FROM_EMAIL,
 				recipient_list=emails,
 				fail_silently=False,
 			)
+		
+		for sub in subscribers:
+			settings = MessagesSettings.objects.filter(user=sub.user).first()
+			if settings and settings.send_notification:
+				Notifications.objects.create(
+					category=category,
+					recipient=sub.user,
+					title='Новая публикация от вашего автора',
+					notification_text=f'Привет! {author.username} только что опубликовал новую статью: "<a href="{article_url}">{instance.title}</a>". Приятного чтения!',
+				)
+			
+			
+@receiver(post_save, sender=LikesModel)
+def send_likes_notification(sender, instance, created, **kwargs):
+	if created:
+		user = instance.user
+		author = instance.article.author
+		category = NotificationCategories.objects.get(pk=2)
+		author_custom_instance = CustomUserModel.objects.get(user=author)
+		author_settings = MessagesSettings.objects.get(user=author_custom_instance)
+
+		if author_settings.send_notification:
+			Notifications.objects.create(
+				category=category,
+				recipient=author,
+				title='Вашу статью лайкнули',
+				notification_text=f'Пользователь {user.username} лайкнул вашу статью "{instance.article.title}".'
+			)
+
+		if author_settings.send_messages and author_custom_instance.user.email:
+			send_mail(
+				subject='Вашу статью лайкнули',
+				message=f'Привет! Пользователь {user.username} лайкнул вашу статью "{instance.article.title}".',
+				from_email=settings.DEFAULT_FROM_EMAIL,
+				recipient_list=[author_custom_instance.user.email],
+				fail_silently=False,
+			)
+			
+@receiver(post_save, sender=Emotions)
+def send_emotions_notification(sender, instance, created, **kwargs):
+	if created:
+		user = instance.user
+		author = instance.article.author
+		category = NotificationCategories.objects.get(pk=3)
+		author_custom_instance = CustomUserModel.objects.get(user=author)
+		author_settings = MessagesSettings.objects.get(user=author_custom_instance)
+		emotion_type = instance.emotion_type
+		emotion_path = static(emotion_type.image_path)
+
+		if author_settings.send_notification:
+			Notifications.objects.create(
+				category=category,
+				recipient=author,
+				title='Под вашей статьей оставили реакцию',
+				notification_text=f'Пользователь {user.username} оставил реакцию <img style="width: 30px; height: 30px;" src="{ emotion_path }"> под публикацией: "{instance.article.title}".'
+			)
+
+		if author_settings.send_messages and author_custom_instance.user.email:
+			context = {'user': user.username, 'article': instance.article.title, 'subject': 'Под вашей статьей оставили реакцию',
+					'email_text': f'Пользователь {user.username} оставил реакцию <img style="width: 30px; height: 30px;" src="{ emotion_path }"> под публикацией: "{instance.article.title}".'  }
+			letter = render_to_string('email/emotions_letter.html', context)
+			send_mail(
+				subject=context['subject'],
+				message=letter,
+				from_email=settings.DEFAULT_FROM_EMAIL,
+				recipient_list=[author_custom_instance.user.email],
+				html_message=letter,
+				fail_silently=False,
+			)
+			
+@receiver(post_save, sender=Comments)
+def send_comments_notification(sender, instance, created, **kwargs):
+	if created:
+		user = instance.author
+		author = instance.post.author
+		category = NotificationCategories.objects.get(pk=4)
+		author_custom_instance = CustomUserModel.objects.get(user=author)
+		author_settings = MessagesSettings.objects.get(user=author_custom_instance)
+		parent = instance.parent
+		
+		print(user)
+		print(author)
+		print(author_custom_instance)
+		print(author_settings)
+
+		if author_settings.send_notification and not parent:
+			if author != user:
+				Notifications.objects.create(
+					category=category,
+					recipient=author,
+					title='Под вашей статьей оставили комментарий',
+					notification_text=f'Пользователь {user.username} оставил комментарий под публикацией: "{instance.post.title}".'
+				)
+		elif author_settings.send_notification and parent:
+			if instance.parent.author:
+				Notifications.objects.create(
+					category=category,
+					recipient=instance.parent.author,
+					title='Под вашим комментарием оставили комментарий',
+					notification_text=f'Пользователь {user.username} оставил комментарий к вашему комментарию под публикацией: "{instance.post.title}".'
+				)
+			
+			
+		#
+		# if author_settings.send_messages and author_custom_instance.user.email:
+		# 	context = {'user': user.username, 'article': instance.article.title, 'subject': 'Под вашей статьей оставили реакцию',
+		# 			'email_text': f'Пользователь {user.username} оставил реакцию <img style="width: 30px; height: 30px;" src="{ emotion_path }"> под публикацией: "{instance.article.title}".'  }
+		# 	letter = render_to_string('email/emotions_letter.html', context)
+		# 	send_mail(
+		# 		subject=context['subject'],
+		# 		message=letter,
+		# 		from_email=settings.DEFAULT_FROM_EMAIL,
+		# 		recipient_list=[author_custom_instance.user.email],
+		# 		html_message=letter,
+		# 		fail_silently=False,
+		# 	)
+		

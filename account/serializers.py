@@ -3,6 +3,7 @@ from datetime import date
 from django.contrib.auth.hashers import make_password
 from rest_framework import serializers
 from .models import CustomUserModel
+from echoverse.models import MessagesSettings
 from django.contrib.auth.models import User
 
 class UserSerializer(serializers.ModelSerializer):
@@ -75,6 +76,7 @@ class CustomUserSerializer(serializers.ModelSerializer):
         user = User.objects.create(**user_data)
         current_date = date.today()
         custom_user = CustomUserModel.objects.create(user=user, confirmation_send_date=current_date, **validated_data)
+        MessagesSettings.objects.create(user=custom_user)
         return custom_user
 
     

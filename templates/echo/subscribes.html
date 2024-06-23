@@ -1,0 +1,63 @@
+{% extends "layout/basic.html" %}
+{% load static %}
+{% load thumbnail %}
+{% load custom_filters %}
+
+{% block content %}
+	<div class="main_wrapper">
+		<h3 class="color-white">Мои подписки:</h3>
+		<div>
+			<a href="{% url 'echo:my_subscribes' %}"><button type="button">Текущие</button></a>
+			<a href="{% url 'echo:rec_subscribes' %}"><button type="button">Рекомендуемые</button></a>
+			<a href="{% url 'echo:black_list' %}"><button type="button">Черный список</button></a>
+		</div>
+		{% if sub_type == 'current' %}
+			{% for subscription in subscribes %}
+			<div class="my_comment">
+				<div class="flex-row-between">
+					<div class="flex-row-start">
+						<div class="mini_av" >
+								<img src="{% thumbnail subscription.informator.customusermodel.photo 'mini' %}">
+						</div>
+						<div>{{subscription.informator}}</div>
+						<div>(Подписан с: {{subscription.sub_time}})</div>
+					</div>
+					<a href="{% url 'echo:my_subscribes' %}"><button type="button" data-user_id = '{{ request.user.pk}}' data-aut_id = '{{ subscription.informator.pk }}' onclick="CancelSubscribe(this)">Отписаться</button></a>
+				</div>
+			</div>
+			{% endfor %}
+		{% elif sub_type == 'recommended' %}
+			{% for subscription in subscribes %}
+			<div class="my_comment">
+				<div class="flex-row-between">
+					<div class="flex-row-start">
+						<div class="mini_av" >
+								<img src="{% thumbnail subscription.user.customusermodel.photo 'mini' %}">
+						</div>
+						<div>{{subscription.user}}</div>
+						<div>( На сайте с: {{ subscription.user.date_joined }})</div>
+					</div>
+					<a href="{% url 'echo:rec_subscribes' %}"><button type="button" data-user_id = '{{ request.user.pk}}' data-aut_id = '{{ subscription.user.pk }}'
+							   onclick="Subscribe(this)">Подписаться</button></a>
+				</div>
+			</div>
+			{% endfor %}
+		{% else %}
+			{% for ignore in ignores %}
+				<div class="my_comment">
+					<div class="flex-row-between">
+						<div class="flex-row-start">
+						<div class="mini_av" >
+								<img src="{% thumbnail ignore.ignored_user.customusermodel.photo 'mini' %}">
+						</div>
+						<div>{{ignore.ignored_user}}</div>
+						<div>(Игнорируется с : {{ ignore.ignored_time }})</div>
+					</div>
+						<a href="{% url 'echo:black_list' %}"><button type="button" data-user_id = '{{ request.user.pk}}' data-aut_id = '{{ ignore.ignored_user.pk }}' onclick="CancelIgnor(this)">Отменить игнорирование</button></a>
+					</div>
+				</div>
+			{% endfor %}
+		{% endif %}
+	</div>
+<script src="{% static 'index.js'%}"></script>
+{% endblock %}

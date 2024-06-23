@@ -20,6 +20,7 @@ if (subscription) {
     }
 }
 
+
 if (ignor) {
     if (ignor.querySelector('a').innerHTML == 'Игнорировать') {
         ignor.setAttribute('onclick', 'Ignore(this)');

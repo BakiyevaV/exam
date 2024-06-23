@@ -14,7 +14,7 @@ html, body {
     color: green !important;
 }
 body {
-    background-image: url('img/background.jpg');
+    background-image: url('img/image13.png');
     background-repeat: repeat;
     background-size: auto;
     display: flex;
@@ -200,6 +200,16 @@ br{
     display: flex;
     flex-direction: column;
     justify-content: center;
+}
+
+.flex-row-between{
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 50px;
+    justify-content: space-between;
+    white-space: nowrap;
 }
 
  #modalImage {
@@ -459,6 +469,16 @@ a:hover{
     margin-top: 20px;
     color: white;
     padding: 10px;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+.my_comment:hover{
+    border: 1px solid green;
+}
+.title{
+    width: 95%;
 }
 .pagination{
     color: white;
@@ -485,4 +505,14 @@ a:hover{
 }
 .current{
     background-color: #2b669a;
+}
+.settings-menu{
+    position: absolute;
+    background-color: black;
+    padding: 8px;
+    border: 1px solid #2b669a;
+    display: block;
+}
+.link:hover{
+    color: #2b669a;
 }

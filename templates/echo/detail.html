@@ -61,15 +61,17 @@
 						<label for="eye" id="view_count">{{ views }}</label>
 					</div>
 					{% if request.user.is_authenticated %}
-						{% if is_saved %}
-								<i class="fa-solid fa-bookmark" style="color: #0d6efd;"></i>
-							{% else %}
-								<form action="{% url 'echo:save_article' pk=articles.pk user_id=request.user.pk %}" method="post">
-									{% csrf_token %}
-									<button type="submit" style="background: none; border: none; padding: 0;">
-										<i class="fa-solid fa-bookmark" style="color: #d3d5d9;"></i>
-									</button>
-								</form>
+						{% if request.user.pk != articles.author.pk %}
+							{% if is_saved %}
+									<i class="fa-solid fa-bookmark" style="color: #0d6efd;"></i>
+								{% else %}
+									<form action="{% url 'echo:save_article' pk=articles.pk user_id=request.user.pk %}" method="post">
+										{% csrf_token %}
+										<button type="submit" style="background: none; border: none; padding: 0;">
+											<i class="fa-solid fa-bookmark" style="color: #d3d5d9;"></i>
+										</button>
+									</form>
+							{% endif %}
 						{% endif %}
 					{% else %}
 						<a href="" data-bs-toggle="modal" data-bs-target="#authorization">

@@ -8,16 +8,18 @@
 		<h3 class="color-white">Комментарии за авторством: {{ request.user }}</h3>
 		{% for comment in comments %}
 		  <div class="my_comment">
-            <div class="flex-row-start">
-                <div class="mini_av" >
-                    <img src="{% thumbnail comment.author.customusermodel.photo 'mini' %}">
-                </div>
-                <div>{{ comment.author.username }}</div>
-				<div data-detail_id="{{ comment.post.pk }}">Название публикции: {{ comment.post.title|truncate_more:40 }}</div>
-            </div>
-			<div>
-				<div class="my_comment_wrapper">Текст комментария: <div class="my_comment_text"> {{ comment.content }}</div></div>
-			</div>
+		  	<div>
+				<div class="flex-row-start">
+					<div class="mini_av" >
+						<img src="{% thumbnail comment.author.customusermodel.photo 'mini' %}">
+					</div>
+					<div>{{ comment.author.username }}</div>
+					<div data-detail_id="{{ comment.post.pk }}">Название публикции: {{ comment.post.title|truncate_more:40 }}</div>
+				</div>
+				<div>
+					<div class="my_comment_wrapper">Текст комментария: <div class="my_comment_text"> {{ comment.content }}</div></div>
+				</div>
+		  	</div>
 		  	<div class="">({{ comment.updated }})</div>
 		</div>
 		{% endfor %}

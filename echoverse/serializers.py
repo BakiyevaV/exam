@@ -2,7 +2,7 @@ from django.db import IntegrityError
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from .models import ArticleImage, Articles, Emotions, EmotionImage, LikesModel, ViewsModel, SubscriptionModel, \
-    IgnoreModel
+    IgnoreModel, MessagesSettings
 
 
 class ArticleImageSerializer(serializers.ModelSerializer):
@@ -79,4 +79,11 @@ class IgnoreSerializer(serializers.ModelSerializer):
     class Meta:
         model = IgnoreModel
         fields = ['user', 'ignored_user']
+
+class MessagesSettingsSerializer(serializers.ModelSerializer):
+    
+    class Meta:
+        model = MessagesSettings
+        fields = ['user', 'send_messages', 'send_notification']
+        
         

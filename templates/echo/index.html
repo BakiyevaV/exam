@@ -62,13 +62,17 @@
 					</div>
 					{% if request.user.is_authenticated %}
 						{% if article.pk in liked_articles %}
+							{% if request.user.pk != article.author.pk %}
 							<div data-like='true' data-article-id="{{ article.pk }}" onclick="takeLike(this)">
 								<i class="fa-solid fa-heart fa-xl" style="color: #e12323;"></i>
 							</div>
+							{% endif %}
 						{% else %}
+							{% if request.user.pk != article.author.pk %}
 							<div data-like='false'  data-article-id="{{ article.pk }}" onclick="takeLike(this)">
 								<i class="fa-regular fa-heart fa-xl" style="color: #d3d5d9;"></i>
 							</div>
+							{% endif %}
 						{% endif %}
 					{% else %}
 						<a href="" data-bs-toggle="modal" data-bs-target="#authorization">
@@ -108,14 +112,18 @@
 						</div>
 						{% if request.user.is_authenticated %}
 							{% if article.pk in saved_articles %}
+								{% if request.user.pk != article.author.pk %}
 								<i class="fa-solid fa-bookmark" style="color: #0d6efd;"></i>
+								{% endif %}
 							{% else %}
+								{% if request.user.pk != article.author.pk %}
 								<form action="{% url 'echo:save_article' pk=article.pk user_id=request.user.pk %}?next={{ request.path }}" method="post">
 									{% csrf_token %}
 									<button type="submit" style="background: none; border: none; padding: 0;">
 										<i class="fa-solid fa-bookmark" style="color: #d3d5d9;"></i>
 									</button>
 								</form>
+								{% endif %}
 							{% endif %}
 						{% else %}
 							<a href="" data-bs-toggle="modal" data-bs-target="#authorization">
@@ -124,6 +132,7 @@
 						{% endif %}
 					</div>
 					{% if request.user.is_authenticated %}
+						{% if request.user.pk != article.author.pk %}
 						<div class="emotions">
 							<li class="nav-item dropdown">
 								<a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -140,6 +149,7 @@
 								</ul>
 							</li>
 						</div>
+						{% endif %}
 					{% else %}
 					<div class="emotions">
 						<a class="nav-link dropdown-toggle" data-bs-toggle="modal" data-bs-target="#authorization">

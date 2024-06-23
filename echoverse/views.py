@@ -14,11 +14,12 @@ from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 from echoverse.forms import ArticleForm, ImageForm, CommentForm, SavesForm
 from echoverse.models import Articles, EmotionImage, Emotions, LikesModel, ViewsModel, Comments, SavesModel, Categories, \
-    SubscriptionModel, IgnoreModel
+    SubscriptionModel, IgnoreModel, Notifications, MessagesSettings
 from .serializers import ArticleSerializer, ArticleImageSerializer, EmotionsSerializer, LikesSerializer, \
-    ViewsSerializer, SubscriptionSerializer, IgnoreSerializer
+    ViewsSerializer, SubscriptionSerializer, IgnoreSerializer, MessagesSettingsSerializer
 from django.db.models import Count
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from account.models import CustomUserModel
 
 
 def index(request):
@@ -112,7 +113,6 @@ class CreateArticleView(FormView):
     #     self.object = form.save()
     #     image_form.instance.article = self.object
     #     image_form.save()
-    #     print('Успешно')
     #     return redirect(self.get_success_url())
     #
     # def form_invalid(self, form, image_form):
@@ -147,13 +147,11 @@ class ArticleDetailView(DetailView):
     
     def get_queryset(self):
         pk = self.kwargs.get('pk')
-        print(Articles.objects.filter(pk=pk))
         return Articles.objects.filter(pk=self.kwargs.get('pk')).prefetch_related('post_comment__children')
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         article = context['object']
-        print(article)
         emojies = EmotionImage.objects.all()
         emotions_count = {}
         for emoji in emojies:
@@ -173,7 +171,6 @@ class ArticleDetailView(DetailView):
         views = ViewsModel.objects.filter(article=article).count()
         comments = Comments.objects.filter(post=article)
         comments_count = Comments.objects.filter(post=article).count()
-        print('emotions_count', emotions_count)
         context['emojies'] = emojies
         context['emotions_count'] = emotions_count
         context['is_liked'] = likes
@@ -183,10 +180,8 @@ class ArticleDetailView(DetailView):
         context['comments_count'] = comments_count
         return context
 def save_article(request, pk, user_id):
-    print(request.method)
     if request.method == 'POST':
         data = request.POST.copy()
-        print('data',data)
         data['article'] = pk
         data['user'] = user_id
         form = SavesForm(data)
@@ -195,8 +190,7 @@ def save_article(request, pk, user_id):
             next_url = request.GET.get('next', reverse_lazy('echo:article_detail', kwargs={'pk': pk}))
             return HttpResponseRedirect(next_url)
         else:
-            print("Form is not valid")
-            print(form.errors)  # Логируем ошибки формы для дополнительной отладки
+            print.error(form.errors)
     next_url = request.GET.get('next', reverse_lazy('echo:article_detail', kwargs={'pk': pk}))
     return HttpResponseRedirect(next_url)
 
@@ -210,21 +204,17 @@ class EmotionsSaveApi(ModelViewSet):
         data_list = request.data.get('data')
         results = []
         for data in data_list:
-            print('data')
             data['user'] = request.user.pk
             try:
                 elem = Emotions.objects.get(article=data['article'], user=data['user'],
                                             emotion_type=data['emotion_type'])
-                print('Existing element:', elem)
             except Emotions.DoesNotExist:
-                print('No existing element found.')
                 elem = None
             if elem:
                 elem.delete()
                 return Response({'message': 'Emotion entry deleted.'}, status=status.HTTP_200_OK)
             serializer = self.get_serializer(data=data)
             if serializer.is_valid():
-                print('is_valid')
                 try:
                     self.perform_create(serializer)
                     results.append(serializer.data)
@@ -243,7 +233,6 @@ class LikeSaveAPIView(APIView):
         try:
             like = LikesModel.objects.get(article_id=pk, user=user)
             like.delete()
-            print("like.delete()")
             return Response({'message': f'Like on article {pk} by user {user.pk} deleted.'},
                             status=status.HTTP_200_OK)
         except LikesModel.DoesNotExist:
@@ -281,7 +270,6 @@ def save_comment(request, pk):
             form.save()
             return redirect(reverse_lazy('echo:article_detail', kwargs={'pk': pk}))
         else:
-            print("Form is not valid")
             print(form.errors)
     return redirect(reverse_lazy('echo:article_detail', kwargs={'pk': pk}))
     
@@ -291,11 +279,19 @@ def get_top(request):
         comments_count=Count('post_comment'),
         views_count=Count('viewsmodel')).filter(like_count__gt=0).order_by('-like_count')[:20]
     emojies = EmotionImage.objects.all()
-    likes = LikesModel.objects.filter(user=request.user).values_list('article_id', flat=True)
-    liked_articles = set(likes)
-    saves = SavesModel.objects.filter(user=request.user).values_list('article_id', flat=True)
-    saved_articles = set(saves)
     
+    if request.user.is_authenticated:
+        likes = LikesModel.objects.filter(user=request.user).values_list('article_id', flat=True)
+        print('likes', likes)
+        liked_articles = set(likes)
+        saves = SavesModel.objects.filter(user=request.user).values_list('article_id', flat=True)
+        saved_articles = set(saves)
+        print('liked_articles',liked_articles)
+    else:
+        liked_articles = set()
+        saved_articles = set()
+        print('empty set')
+        
     emotions_count = {}
     
     for article in articles:
@@ -323,6 +319,7 @@ def get_top(request):
         'pages_num': pages_num,
         'page_title': f"20 публикаций, понравившихся наибольшему количеству пользователей:"
     }
+    print(context)
     return render(request, 'echo/index.html', context)
 
 
@@ -345,10 +342,17 @@ class RecentArticlesView(ListView):
         context = super().get_context_data(**kwargs)
         articles = context['articles']
         emojies = EmotionImage.objects.all()
-        likes = LikesModel.objects.filter(user=self.request.user).values_list('article_id', flat=True)
-        liked_articles = set(likes)
-        saves = SavesModel.objects.filter(user=self.request.user).values_list('article_id', flat=True)
-        saved_articles = set(saves)
+        if self.request.user.is_authenticated:
+            likes = LikesModel.objects.filter(user=self.request.user).values_list('article_id', flat=True)
+            print('likes', likes)
+            liked_articles = set(likes)
+            saves = SavesModel.objects.filter(user=self.request.user).values_list('article_id', flat=True)
+            saved_articles = set(saves)
+            print('liked_articles', liked_articles)
+        else:
+            liked_articles = set()
+            saved_articles = set()
+            print('empty set')
         
         emotions_count = {}
         
@@ -366,7 +370,6 @@ class RecentArticlesView(ListView):
             'saved_articles': saved_articles,
             'page_title': f"Публикации созданные в течение последних 12 часов:"
         })
-        print("context",context)
         return context
 
 
@@ -390,6 +393,11 @@ class ByCategory(ListView):
         if self.request.user.is_authenticated:
             likes = LikesModel.objects.filter(user=self.request.user).values_list('article_id', flat=True)
             context['liked_articles'] = set(likes)
+            saves = SavesModel.objects.filter(user=self.request.user).values_list('article_id', flat=True)
+            context['saved_articles'] = set(saves)
+        else:
+            context['liked_articles'] = set()
+            context['saved_articles'] = set()
         
         emojies = EmotionImage.objects.all()
         emotions_count = {}
@@ -480,6 +488,23 @@ class MyCommentsView(ListView):
         return queryset
 
 
+class MyNotificationsView(ListView):
+    model = Notifications
+    template_name = 'echo/my_notifications.html'
+    context_object_name = 'notifications'
+    
+    def get_queryset(self):
+        queryset = Notifications.objects.filter(recipient=self.request.user).order_by('send')
+        return queryset
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if self.request.user.is_authenticated:
+            user = CustomUserModel.objects.get(user=self.request.user)
+            context['settings'] = MessagesSettings.objects.get(user=user)
+            print('context', context['settings'])
+        return context
+
 class SearchView(ListView):
     model = Articles
     template_name = 'echo/index.html'
@@ -488,7 +513,6 @@ class SearchView(ListView):
     def get_queryset(self):
         queryset = super().get_queryset()
         query = self.request.GET.get('search')
-        print(query)
 
         if query:
             search_query = SearchQuery(query, search_type='plain')
@@ -496,8 +520,8 @@ class SearchView(ListView):
             queryset = queryset.annotate(
                 search=search_vector
             ).filter(search=search_query)
-        print(queryset)
         return queryset
+    
     
 class SubscriptionView(APIView):
     queryset = SubscriptionModel.objects.all()
@@ -536,16 +560,72 @@ class IgnoreView(APIView):
     def delete(self, request, *args, **kwargs):
         user = request.data.get('user')
         ignored_user = request.data.get('ignored_user')
-        print(user)
-        print(ignored_user)
         ignore = IgnoreModel.objects.get(user=user, ignored_user=ignored_user)
-        print(ignore)
         if not ignore:
             return Response({'error': 'Отсутствует такая подписка'}, status=status.HTTP_400_BAD_REQUEST)
         ignore.delete()
         return Response({'success': 'Подписка удалена'}, status=status.HTTP_204_NO_CONTENT)
     
     
+class SettingsApiView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        user = CustomUserModel.objects.get(user=self.request.user)
+        try:
+            settings = MessagesSettings.objects.get(user=user)
+        except MessagesSettings.DoesNotExist:
+            return Response({'error': 'Settings not found for this user'}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = MessagesSettingsSerializer(settings, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+class SubscribesView(ListView):
+    model = SubscriptionModel
+    template_name = 'echo/subscribes.html'
+    context_object_name = 'subscribes'
     
+    def get_queryset(self):
+        queryset = SubscriptionModel.objects.filter(user=self.request.user).order_by('sub_time')
+        return queryset
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['sub_type'] = 'current'
+        return context
+    
+
+class RecSubscribesView(ListView):
+    model = SubscriptionModel
+    template_name = 'echo/subscribes.html'
+    context_object_name = 'subscribes'
+    
+    def get_queryset(self):
+        current_subscriptions = SubscriptionModel.objects.filter(user=self.request.user).values_list('informator', flat=True)
+        queryset = CustomUserModel.objects.exclude(user__in=current_subscriptions).exclude(user=self.request.user)
+        print(queryset)
+        return queryset
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['sub_type'] = 'recommended'
+        return context
+    
+class BlackListView(ListView):
+    model = IgnoreModel
+    template_name = 'echo/subscribes.html'
+    context_object_name = 'ignores'
+    
+    def get_queryset(self):
+        queryset = IgnoreModel.objects.filter(user=self.request.user)
+        print(queryset)
+        return queryset
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['sub_type'] = 'black_list'
+        return context
