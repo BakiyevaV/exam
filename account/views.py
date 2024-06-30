@@ -97,6 +97,10 @@ class GetUserData(APIView):
 		password = request.data.get('password')
 		user = authenticate(username=username, password=password)
 		if user:
+			print(user)
+			if user.is_superuser or user.is_staff:
+				return Response({'data': 'staff'}, status=status.HTTP_200_OK)
+				
 			try:
 				custom_user = user.customusermodel
 				if custom_user.is_confirmed:
@@ -144,6 +148,10 @@ def login_view(request):
 			print(current_user)
 			if current_user:
 				login(request, current_user)
+				print('current_user', current_user)
+				if current_user.is_superuser or current_user.is_staff:
+					print('staff', current_user)
+					return redirect('echo:for_staff')
 				return redirect('echo:index')
 			
 			
@@ -203,5 +211,8 @@ class SaveUserInfoApi(APIView):
 			serializer.save()
 			return Response({'success': 'Saved'}, status=status.HTTP_200_OK)
 		return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+	
+
+	
 	
 

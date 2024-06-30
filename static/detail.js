@@ -46,18 +46,22 @@ document.addEventListener('DOMContentLoaded', (event) => {
         
         if (commentElement) {
             if (commentElement.classList.contains('children_comment')) {
-                const dropdownLink = document.getElementById('dropdownMenuLink');
-                const dropdownMenu = document.getElementById('dropdownMenu');
+                const parent_id = commentElement.getAttribute('data-parent')
+                const parentComment = document.querySelector(`.comment[data-comment-id='${parent_id}']`);
+                const dropdownLink = parentComment.querySelector('.dropdown-toggle');
+                const dropdownMenu = parentComment.querySelector('.comments-menu');
                 
                 // Получаем позицию элемента commentElement
                 const rect = dropdownLink.getBoundingClientRect();
                 console.log(dropdownLink.closest('.comment_text'))
-                console.log(rect)
+                console.log(dropdownMenu.offsetWidth)
                 dropdownMenu.style.top = `${rect.bottom + window.scrollY}px`; // Устанавливаем позицию сверху
-                dropdownMenu.style.left = `${rect.left - rect.width}px`; // Устанавливаем позицию слева
+                dropdownMenu.style.left = `${rect.left + window.scrollX + (rect.width * 2 - 5)}px`; // Устанавливаем позицию слева
                 
                 dropdownMenu.classList.add('show');
                 dropdownLink.setAttribute('aria-expanded', 'true');
+                commentElement.classList.add('current-comment');
+                commentElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
             } else {
                 commentElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 commentElement.classList.add('current-comment');

@@ -145,12 +145,12 @@
 							</div>
 						</form>
 					</ul>
-					<a class="nav-link dropdown-toggle" id="dropdownMenuLink" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+					<a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
 						Показать ответы <span>({{ comment.children.count }})</span>
 					</a>
-					<ul class="dropdown-menu dropdown-menu-end menu-bg" id="dropdownMenu">
+					<ul class="dropdown-menu dropdown-menu-end menu-bg comments-menu">
 						{% for child in comment.children.all %}
-						<div class="children_comment" data-comment-id="{{child.pk}}">
+						<div class="children_comment" data-comment-id="{{child.pk}}" data-parent="{{child.parent.pk}}">
 							 <div class="flex-row-start">
 								<div class="mini_av" >
 									<img src="{% thumbnail comment.author.customusermodel.photo 'mini' %}">
@@ -167,6 +167,5 @@
     {% endif %}
 	{% endfor %}
 	</div>
-	<script src="{% static 'index.js'%}"></script>
 	<script src="{% static 'detail.js'%}"></script>
 {% endblock %}

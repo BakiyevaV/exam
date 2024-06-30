@@ -1,0 +1,23 @@
+{% extends "layout/basic.html" %}
+{% load static %}
+{% load thumbnail %}
+{% load custom_filters %}
+
+{% block content %}
+	<div class="main_wrapper">
+		<h3 class="color-white">Текущие задачи:</h3>
+		{% for inquiry in inquiries %}
+		<div class="my_comment">
+			<div class="flex-row-between">
+				<div>
+					<div >{{ inquiry.subject }}:</div>
+					<div >{{ inquiry.message }}</div>
+				</div>
+				<div>{{ inquiry.created_at }}</div>
+			</div>
+		</div>
+		{% endfor %}
+	</div>
+	<a href="{% url 'admin:index' %}"><button type="button">Перейти на страницу администратора</button></a>
+	<a href="{% url 'echo:send_mail' %}"><button type="button">Создать уведомление</button></a>
+{% endblock %}

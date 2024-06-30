@@ -4,7 +4,7 @@ from rest_framework.routers import DefaultRouter
 from echoverse.views import index, CreateArticleView, ArticleCreateAPIView, ArticleImageCreateAPIView, \
     ArticleDetailView, save_article, EmotionsSaveApi, LikeSaveAPIView, ViewSaveAPIView, save_comment, get_top,\
     RecentArticlesView, ByCategory, MyArticlesView, MyLikesView, MyCommentsView, SearchView, SubscriptionView, IgnoreView,\
-    MyNotificationsView, SettingsApiView, SubscribesView, RecSubscribesView, BlackListView
+    MyNotificationsView, SettingsApiView, SubscribesView, RecSubscribesView, BlackListView, StaffHandlingView, StaffSendMail
 
 app_name = 'echo'
 
@@ -37,4 +37,6 @@ urlpatterns = [
     path('api/subscribes/current', SubscribesView.as_view(), name='my_subscribes'),
     path('api/subscribes/recommended', RecSubscribesView.as_view(), name='rec_subscribes'),
     path('api/subscribes/black_list', BlackListView.as_view(), name='black_list'),
+    path('for_staff/', StaffHandlingView.as_view(), name='for_staff'),
+    path('send_mail/', StaffSendMail.as_view(), name='send_mail'),
 ]

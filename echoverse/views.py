@@ -14,12 +14,13 @@ from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 from echoverse.forms import ArticleForm, ImageForm, CommentForm, SavesForm
 from echoverse.models import Articles, EmotionImage, Emotions, LikesModel, ViewsModel, Comments, SavesModel, Categories, \
-    SubscriptionModel, IgnoreModel, Notifications, MessagesSettings
+    SubscriptionModel, IgnoreModel, Notifications, MessagesSettings, UserInquiry
 from .serializers import ArticleSerializer, ArticleImageSerializer, EmotionsSerializer, LikesSerializer, \
     ViewsSerializer, SubscriptionSerializer, IgnoreSerializer, MessagesSettingsSerializer
 from django.db.models import Count
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from account.models import CustomUserModel
+from django.contrib.auth.mixins import UserPassesTestMixin
 
 
 def index(request):
@@ -629,3 +630,31 @@ class BlackListView(ListView):
         context = super().get_context_data(**kwargs)
         context['sub_type'] = 'black_list'
         return context
+    
+class StaffHandlingView(ListView):
+    model = UserInquiry
+    template_name = 'echo/staff_page.html'
+    context_object_name = 'inquiries'
+    
+    def get_queryset(self):
+        queryset = self.model.objects.filter(is_resolved = False)
+        print(queryset)
+        return queryset
+    
+
+class StaffSendMail(UserPassesTestMixin, CreateView):
+    model = Notifications
+    fields = ['category', 'recipient', 'title', 'notification_text']
+    template_name = 'echo/staff_send_mail.html'
+    success_url = reverse_lazy('some_success_url_name')
+    
+    def test_func(self):
+        return self.request.user.is_staff
+    
+    def form_valid(self, form):
+        form.instance.sender = self.request.user
+        return super().form_valid(form)
+
+    
+    
+    

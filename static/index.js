@@ -176,14 +176,14 @@ async function updateMessageSettings(event){
 
 }
 
-function getFullNotification(event){
-    event.preventDefault()
-    const parent = event.target.parentElement
+function getFullNotification(notification){
+
+    const parent = notification.parentElement
     const message = parent.querySelector('[name="message"]')
-    console.log(event.target)
+    console.log(notification)
     console.log(message)
     message.removeAttribute('hidden')
-    event.target.closest(".more").setAttribute('hidden', 'True')
+    notification.closest(".more").setAttribute('hidden', 'True')
 
 }
 function reduceNotification(event){

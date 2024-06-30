@@ -209,7 +209,15 @@ class IgnoreModel(models.Model):
 
     def __str__(self):
         return f"{self.user} - {self.ignored_user}"
+class UserInquiry(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='inquiries')
+    subject = models.CharField(max_length=255)
+    message = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_resolved = models.BooleanField(default=False)
 
+    def __str__(self):
+        return f"{self.user.username} - {self.subject}"
 
 @receiver(post_save, sender=Articles)
 def send_confirmation_notification(sender, instance, created, **kwargs):
@@ -314,10 +322,6 @@ def send_comments_notification(sender, instance, created, **kwargs):
 		author_settings = MessagesSettings.objects.get(user=author_custom_instance)
 		parent = instance.parent
 		
-		print(user)
-		print(author)
-		print(author_custom_instance)
-		print(author_settings)
 
 		if author_settings.send_notification and not parent:
 			if author != user:
@@ -335,19 +339,51 @@ def send_comments_notification(sender, instance, created, **kwargs):
 					title='Под вашим комментарием оставили комментарий',
 					notification_text=f'Пользователь {user.username} оставил комментарий к вашему комментарию под публикацией: "{instance.post.title}".'
 				)
+		if author_settings.send_messages and not parent:
+			send_mail(
+				subject='Вам оставили комментарий',
+				message=f'Пользователь {user.username} оставил комментарий под публикацией: "{instance.post.title}".',
+				from_email=settings.DEFAULT_FROM_EMAIL,
+				recipient_list=[author_custom_instance.user.email],
+				fail_silently=False,
+			)
 			
 			
-		#
-		# if author_settings.send_messages and author_custom_instance.user.email:
-		# 	context = {'user': user.username, 'article': instance.article.title, 'subject': 'Под вашей статьей оставили реакцию',
-		# 			'email_text': f'Пользователь {user.username} оставил реакцию <img style="width: 30px; height: 30px;" src="{ emotion_path }"> под публикацией: "{instance.article.title}".'  }
-		# 	letter = render_to_string('email/emotions_letter.html', context)
-		# 	send_mail(
-		# 		subject=context['subject'],
-		# 		message=letter,
-		# 		from_email=settings.DEFAULT_FROM_EMAIL,
-		# 		recipient_list=[author_custom_instance.user.email],
-		# 		html_message=letter,
-		# 		fail_silently=False,
-		# 	)
+
+class UserInquiry(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='inquiries')
+    subject = models.CharField(max_length=255)
+    message = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_resolved = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.subject}"
+
+
+@receiver(post_save, sender=UserInquiry)
+def send_user_inquiry(sender, instance, created, **kwargs):
+	if created:
+		user = instance.user
+		subject = instance.subject
+		message = instance.message
+		created_at = instance.created_at
+		author_custom_instance = CustomUserModel.objects.get(user=user)
+		author_settings = MessagesSettings.objects.get(user=author_custom_instance)
+		category = NotificationCategories.objects.get(pk=5)
+	
+		Notifications.objects.create(
+			category=category,
+			recipient=user,
+			title='Ваше обращение принято',
+			notification_text=f'Ваше обращение на тему {subject} принято от {created_at}. Вы получите ответ в ближайшее время.'
+		)
 		
+		if author_settings.send_messages:
+			send_mail(
+				subject='Ваше обращение принято',
+				message=f'Ваше обращение на тему {subject} принято от {created_at}. Вы получите ответ в ближайшее время.',
+				from_email=settings.DEFAULT_FROM_EMAIL,
+				recipient_list=[author_custom_instance.user.email],
+				fail_silently=False,
+			)

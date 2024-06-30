@@ -69,6 +69,7 @@ async function authorization(){
                 appendAlert('Пользователь не закончил регистрацию!',  'danger')
             } else {
                 const data = await logIn(login, password)
+                console.log(data)
                 if (data) {
                     let myModal = document.getElementById('authorization');
                     myModal.classList.remove('show')
@@ -243,7 +244,7 @@ async function getUserData(username, password){
             console.log(data.data)
             return "notConfirmed";
         }
-        return true;
+        return data.data;
     } catch (error) {
         return false
     }
