@@ -1,5 +1,7 @@
 
 
+
+
 async function haveView(){
 	const pk = document.getElementById('article_content').getAttribute('data-detail_id')
     const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
@@ -25,7 +27,46 @@ async function haveView(){
     }).catch(error => console.error('Error updating Views:', error));
 }
 
-haveView()
+console.log("details")
+document.addEventListener('DOMContentLoaded', (event) => {
+    // Получаем текущий URL
+    const url = new URL(window.location.href);
+    console.log(url)
+    
+    // Получаем параметры из URL
+    const postId = url.pathname.split('/').filter(Boolean).pop(); // Извлекаем postId из пути URL
+    const commentId = url.searchParams.get('commentId'); // Извлекаем commentId из параметров URL
+    
+    console.log('Post ID:', postId);
+    console.log('Comment ID:', commentId);
+
+    if (commentId) {
+        const commentElement = document.querySelector(`[data-comment-id='${commentId}']`);
+        console.log('commentElement:', commentElement);
+        
+        if (commentElement) {
+            if (commentElement.classList.contains('children_comment')) {
+                const dropdownLink = document.getElementById('dropdownMenuLink');
+                const dropdownMenu = document.getElementById('dropdownMenu');
+                
+                // Получаем позицию элемента commentElement
+                const rect = dropdownLink.getBoundingClientRect();
+                console.log(dropdownLink.closest('.comment_text'))
+                console.log(rect)
+                dropdownMenu.style.top = `${rect.bottom + window.scrollY}px`; // Устанавливаем позицию сверху
+                dropdownMenu.style.left = `${rect.left - rect.width}px`; // Устанавливаем позицию слева
+                
+                dropdownMenu.classList.add('show');
+                dropdownLink.setAttribute('aria-expanded', 'true');
+            } else {
+                commentElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                commentElement.classList.add('current-comment');
+            }
+            
+        }
+    }
+    haveView()
+});
 
 async function saveView(){
 	const pk = document.getElementById('article_content').getAttribute('data-detail_id')
@@ -46,3 +87,6 @@ async function saveView(){
       })
       .catch(error => console.error('Error updating Likes:', error));
 }
+
+
+

@@ -404,10 +404,14 @@ hr{
     word-wrap: break-word;
     gap: 10px;
 }
-.my_comment_text{
+.my_comment_text {
     padding: 5px;
     border-radius: 5px;
     border: 1px solid #2b669a;
+}
+
+.my_comment_text:hover{
+    border: 2px solid green;
 }
 .invisible_button{
     border: none;
@@ -515,4 +519,20 @@ a:hover{
 }
 .link:hover{
     color: #2b669a;
+}
+
+.current-comment{
+    border: 1px solid green;
+}
+
+#dropdownMenu {
+    position: absolute;
+    top: 50px;
+    left: 0;
+    z-index: 1000;
+    display: none;
+}
+
+#dropdownMenu.show {
+    display: block;
 }

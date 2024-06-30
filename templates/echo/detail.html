@@ -122,7 +122,7 @@
 	{% endif %}
 	{% for comment in comments %}
     {% if comment.parent is None %}
-        <div class="comment" name="visible_comment">
+        <div class="comment" name="visible_comment" data-comment-id="{{comment.pk}}">
             <div class="flex-row-start">
                 <div class="mini_av" >
                     <img src="{% thumbnail comment.author.customusermodel.photo 'mini' %}">
@@ -145,12 +145,12 @@
 							</div>
 						</form>
 					</ul>
-					<a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+					<a class="nav-link dropdown-toggle" id="dropdownMenuLink" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
 						Показать ответы <span>({{ comment.children.count }})</span>
 					</a>
-					<ul class="dropdown-menu dropdown-menu-end menu-bg">
+					<ul class="dropdown-menu dropdown-menu-end menu-bg" id="dropdownMenu">
 						{% for child in comment.children.all %}
-						<div class="children_comment">
+						<div class="children_comment" data-comment-id="{{child.pk}}">
 							 <div class="flex-row-start">
 								<div class="mini_av" >
 									<img src="{% thumbnail comment.author.customusermodel.photo 'mini' %}">

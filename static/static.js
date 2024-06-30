@@ -406,3 +406,8 @@ async function CancelIgnor(element){
       .catch(error => console.error('Error CancelIgnor:', error));
 
 }
+
+function getComment(comment){
+   window.location = window.location.protocol + "//" + window.location.host + "/detail/" + comment.getAttribute("data-post-id") + "/?commentId=" + comment.getAttribute("data-comment-id");
+   console.log(window.location.href)
+}
