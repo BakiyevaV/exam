@@ -25,17 +25,29 @@ services:
       PGADMIN_CONFIG_SERVER_MODE: 'False'
     volumes:
        - pgadmin:/var/lib/pgadmin
-
     ports:
       - "5050:80"
     networks:
       - postgres
     restart: unless-stopped
 
-
   vika:
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: vika
-    image: full-image:v1
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=your_db_name
+      - POSTGRES_HOST=postgres_container
+    depends_on:
+      - postgres
+    command: >
+      sh -c "
+      python manage.py makemigrations &&
+      python manage.py migrate &&
+      python manage.py runserver 0.0.0.0:8000"
     ports:
       - "8000:8000"
     networks:
