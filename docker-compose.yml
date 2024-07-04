@@ -4,7 +4,7 @@ services:
   postgres:
     container_name: postgres_container
     image: postgres
-    env_file: 
+    env_file:
       - .env
     environment:
       POSTGRES_DB: ${DB_NAME}
@@ -22,11 +22,11 @@ services:
   pgadmin:
     container_name: pgadmin_container
     image: dpage/pgadmin4
-    env_file: 
+    env_file:
       - .env
     environment:
-      PGADMIN_DEFAULT_EMAIL: ${EMAIL_HOST_USER}
-      PGADMIN_DEFAULT_PASSWORD: ${EMAIL_HOST_PASSWORD}
+      PGADMIN_DEFAULT_EMAIL: superdev@test.kz
+      PGADMIN_DEFAULT_PASSWORD: 123456
       PGADMIN_CONFIG_SERVER_MODE: 'False'
     volumes:
       - pgadmin:/var/lib/pgadmin
@@ -41,11 +41,11 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: vika
-    env_file: 
+    env_file:
       - .env
     depends_on:
       - postgres
-    entrypoint: ["./entrypoint.sh"]
+#    entrypoint: ["./entrypoint.sh"]
     ports:
       - "8000:8000"
     networks:
