@@ -41,10 +41,10 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: vika
-    env_file:
-      - .env
-    depends_on:
-      - postgres
+#    env_file:
+#      - .env
+#    depends_on:
+#      - postgres
 #    entrypoint: ["./entrypoint.sh"]
     ports:
       - "8000:8000"
