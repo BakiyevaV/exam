@@ -40,7 +40,11 @@ function getImage(e) {
     
     let modal = new bootstrap.Modal(document.getElementById('modalForImage'));
     modal.show();
+    document.getElementById('modalImageClose').addEventListener('click', function (){
+        modal.hide()
+    })
 }
+
 let tags_array = []
 const add_tag = document.getElementById('add_tag')
 let tags_line = document.getElementById('tags_line')

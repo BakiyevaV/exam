@@ -2,7 +2,7 @@ from django.db import IntegrityError
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from .models import ArticleImage, Articles, Emotions, EmotionImage, LikesModel, ViewsModel, SubscriptionModel, \
-    IgnoreModel, MessagesSettings
+    IgnoreModel, MessagesSettings, UserInquiry
 
 
 class ArticleImageSerializer(serializers.ModelSerializer):
@@ -21,7 +21,7 @@ class ArticleImageSerializer(serializers.ModelSerializer):
         images_data = validated_data.get('images', [])
         article_pk = self.context.get('pk')
         article = get_object_or_404(Articles, pk=article_pk)
-        images = [ArticleImage.objects.create(article=article, image=image_data) for image_data in images_data if image_data]
+        images = [ArticleImage.objects.get_or_create(article=article, image=image_data) for image_data in images_data if image_data]
         return images
 class ArticleSerializer(serializers.ModelSerializer):
     tags = serializers.ListField(
@@ -35,15 +35,33 @@ class ArticleSerializer(serializers.ModelSerializer):
         fields = ['id', 'title', 'content', 'category', 'tags']
     
     def create(self, validated_data):
-        validated_data['author'] = self.context['request'].user
-        tags = validated_data['tags']
-        tags = tags[0].split(",")
+        user = self.context['request'].user
+        validated_data['author'] = user
+        tags = validated_data.pop('tags', [])
+        tags = tags[0].split(",") if tags else []
         validated_data['tags'] = tags
         article = Articles.objects.create(**validated_data)
         if tags:
             article.tags = tags
             article.save()
         return article
+    
+    def update(self, instance, validated_data):
+        user = self.context['request'].user
+        validated_data['author'] = user
+        
+        tags = validated_data.pop('tags', [])
+        tags = tags[0].split(",") if tags else []
+        
+        instance.title = validated_data.get('title', instance.title)
+        instance.content = validated_data.get('content', instance.content)
+        instance.category = validated_data.get('category', instance.category)
+        
+        if tags:
+            instance.tags = tags  # assuming tags is a ManyToMany field
+        instance.save()
+        
+        return instance
 
 
 class EmotionsSerializer(serializers.ModelSerializer):
@@ -85,5 +103,11 @@ class MessagesSettingsSerializer(serializers.ModelSerializer):
     class Meta:
         model = MessagesSettings
         fields = ['user', 'send_messages', 'send_notification']
+        
+class InquiriesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserInquiry
+        fields = [ 'subject', 'message', 'is_resolved']
+    
         
         

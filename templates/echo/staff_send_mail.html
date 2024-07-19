@@ -2,9 +2,12 @@
 
 {% block content %}
   <h2>Отправить уведомление</h2>
-  <form method="post">
+  <form method="post" id="notification_form" action="{% url 'echo:send_mail' %}">
     {% csrf_token %}
     {{ form.as_p }}
-    <button type="submit">Отправить</button>
+    <div style="margin-top: 20px;">
+      <button class="btn btn-secondary" type="reset">Отменить</button>
+      <button class="btn btn-primary" type="submit">Отправить</button>
+    </div>
   </form>
 {% endblock %}

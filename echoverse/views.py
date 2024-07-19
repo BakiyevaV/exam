@@ -1,11 +1,15 @@
 from datetime import timedelta
+from django.db.models import Q, F
+from django.contrib.postgres.search import TrigramSimilarity
 
-from django.contrib.postgres.search import SearchVector, SearchQuery
+from django.contrib.postgres.search import SearchVector, SearchQuery, SearchRank
+from django.db.models.functions import Greatest
+from django.forms import inlineformset_factory
 from django.http import HttpResponseRedirect
 from django.utils import timezone
 from django.shortcuts import render, redirect,get_object_or_404
 from django.urls import reverse_lazy
-from django.views.generic import CreateView, FormView, DetailView, ListView
+from django.views.generic import CreateView, FormView, DetailView, ListView, UpdateView
 from rest_framework import status
 from rest_framework.generics import CreateAPIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -14,9 +18,9 @@ from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 from echoverse.forms import ArticleForm, ImageForm, CommentForm, SavesForm
 from echoverse.models import Articles, EmotionImage, Emotions, LikesModel, ViewsModel, Comments, SavesModel, Categories, \
-    SubscriptionModel, IgnoreModel, Notifications, MessagesSettings, UserInquiry
+    SubscriptionModel, IgnoreModel, Notifications, MessagesSettings, UserInquiry, ArticleImage
 from .serializers import ArticleSerializer, ArticleImageSerializer, EmotionsSerializer, LikesSerializer, \
-    ViewsSerializer, SubscriptionSerializer, IgnoreSerializer, MessagesSettingsSerializer
+    ViewsSerializer, SubscriptionSerializer, IgnoreSerializer, MessagesSettingsSerializer, InquiriesSerializer
 from django.db.models import Count
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from account.models import CustomUserModel
@@ -33,12 +37,12 @@ def index(request):
             author_id__in=ignored_authors_ids
         ).annotate(
             comments_count=Count('post_comment', distinct=True),
-            views_count=Count('viewsmodel', distinct=True)
+            views_count=Count('views', distinct=True)
         )
     else:
         article_list = Articles.objects.annotate(
             comments_count=Count('post_comment'),
-            views_count=Count('viewsmodel')
+            views_count=Count('views')
         )
     emojies = EmotionImage.objects.all()
 
@@ -64,7 +68,7 @@ def index(request):
             count = Emotions.objects.filter(article=article, emotion_type=emoji).count()
             emotions_count[article.id][emoji.name] = count
     
-    paginator = Paginator(article_list, 10)
+    paginator = Paginator(article_list, 6)
     page = request.GET.get('page')
     pages_num = range(1, paginator.num_pages + 1)
     try:
@@ -94,6 +98,7 @@ class CreateArticleView(FormView):
     form_class = ArticleForm
     template_name = 'echo/create_article.html'
     success_url = reverse_lazy('echo:index')
+    print('CreateArticleView')
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -118,18 +123,57 @@ class CreateArticleView(FormView):
     #
     # def form_invalid(self, form, image_form):
     #     return self.render_to_response(self.get_context_data(form=form, image_form=image_form))
+
+
+class UpdateArticleView(UpdateView):
+    model = Articles
+    form_class = ArticleForm
+    template_name = 'echo/update.html'
+    success_url = reverse_lazy('echo:my_articles')
+    print('UpdateArticleView')
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if 'image_form' not in context:
+            context['image_form'] = ImageForm()
+        article = self.get_object()
+        context['tags'] = article.tags
+        context['images'] = ArticleImage.objects.filter(article=article)
+        print('images', context['images'])
+        return context
+    
+    def get_object(self, queryset=None):
+        pk = self.kwargs.get('pk')
+        return get_object_or_404(Articles, pk=pk)
+        
+    
     
 class ArticleCreateAPIView(APIView):
     permission_classes = [IsAuthenticated]
-
     def post(self, request, format=None):
         serializer = ArticleSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
             article = serializer.save()
             response_serializer = ArticleSerializer(article)
+            
             return Response(response_serializer.data, status=status.HTTP_201_CREATED)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def put(self, request, pk, format=None):
+        article = get_object_or_404(Articles, pk=pk)
+        print(article)
+        serializer = ArticleSerializer(article, data=request.data, context={'request': request})
+        if serializer.is_valid():
+            article = serializer.save()
+            response_serializer = ArticleSerializer(article)
+            return Response(response_serializer.data, status=status.HTTP_200_OK)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    def delete(self, request, pk, format=None):
+        article = get_object_or_404(Articles, pk=pk)
+        article.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
     
 class ArticleImageCreateAPIView(APIView):
     permission_classes = [IsAuthenticated]
@@ -153,6 +197,7 @@ class ArticleDetailView(DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         article = context['object']
+        images = article.images.all()  # Используем related_name 'images'
         emojies = EmotionImage.objects.all()
         emotions_count = {}
         for emoji in emojies:
@@ -179,6 +224,8 @@ class ArticleDetailView(DetailView):
         context['views'] = views
         context['comments'] = comments
         context['comments_count'] = comments_count
+        context['images'] = images
+        print(images)
         return context
 def save_article(request, pk, user_id):
     if request.method == 'POST':
@@ -276,9 +323,9 @@ def save_comment(request, pk):
     
 def get_top(request):
     articles = Articles.objects.annotate(
-        like_count=Count('likesmodel'),
+        like_count=Count('likes'),
         comments_count=Count('post_comment'),
-        views_count=Count('viewsmodel')).filter(like_count__gt=0).order_by('-like_count')[:20]
+        views_count=Count('views')).filter(like_count__gt=0).order_by('-like_count')[:20]
     emojies = EmotionImage.objects.all()
     
     if request.user.is_authenticated:
@@ -334,9 +381,9 @@ class RecentArticlesView(ListView):
         now = timezone.now()
         twelve_hours_ago = now - timedelta(hours=12)
         queryset = Articles.objects.annotate(
-            like_count=Count('likesmodel'),
+            like_count=Count('likes'),
             comments_count=Count('post_comment'),
-            views_count=Count('viewsmodel')).filter(updated__gte=twelve_hours_ago).order_by('-updated')
+            views_count=Count('views')).filter(updated__gte=twelve_hours_ago).order_by('-updated')
         return queryset
     
     def get_context_data(self, **kwargs):
@@ -383,9 +430,9 @@ class ByCategory(ListView):
     def get_queryset(self):
         category_id = self.kwargs['pk']
         queryset = Articles.objects.annotate(
-            like_count=Count('likesmodel'),
+            like_count=Count('likes'),
             comments_count=Count('post_comment'),
-            views_count=Count('viewsmodel')).filter(category_id=category_id).order_by('-updated')
+            views_count=Count('views')).filter(category_id=category_id).order_by('-updated')
         return queryset
     
     def get_context_data(self, **kwargs):
@@ -423,9 +470,9 @@ class MyArticlesView(ListView):
     
     def get_queryset(self):
         queryset = Articles.objects.annotate(
-            like_count=Count('likesmodel'),
+            like_count=Count('likes'),
             comments_count=Count('post_comment'),
-            views_count=Count('viewsmodel')).filter(author=self.request.user).order_by('-updated')
+            views_count=Count('views')).filter(author=self.request.user).order_by('-updated')
         return queryset
     
     def get_context_data(self, **kwargs):
@@ -454,10 +501,12 @@ class MyLikesView(ListView):
     
     def get_queryset(self):
         liked_articles_ids = LikesModel.objects.filter(user=self.request.user).values_list('article_id', flat=True)
-        queryset = Articles.objects.annotate(
-            like_count=Count('likesmodel'),
+        queryset = Articles.objects.filter(id__in=liked_articles_ids).annotate(
+            like_count=Count('likes'),
             comments_count=Count('post_comment'),
-            views_count=Count('viewsmodel')).filter(id__in=liked_articles_ids).order_by('-updated')
+            views_count=Count('views'),
+            liked_time=F('likes__like_time')
+        ).order_by('-updated')
         return queryset
     
     def get_context_data(self, **kwargs):
@@ -465,6 +514,41 @@ class MyLikesView(ListView):
         if self.request.user.is_authenticated:
             likes = LikesModel.objects.filter(user=self.request.user).values_list('article_id', flat=True)
             context['liked_articles'] = set(likes)
+        
+        emojies = EmotionImage.objects.all()
+        emotions_count = {}
+        for article in context['articles']:
+            emotions_count[article.id] = {}
+            for emoji in emojies:
+                count = Emotions.objects.filter(article=article, emotion_type=emoji).count()
+                emotions_count[article.id][emoji.name] = count
+        
+        context['emojies'] = emojies
+        context['emotions_count'] = emotions_count
+        context['is_authenticated'] = self.request.user.is_authenticated
+        return context
+
+
+class MySavesView(ListView):
+    model = Articles
+    template_name = 'echo/my_saved.html'
+    context_object_name = 'articles'
+    
+    def get_queryset(self):
+        saved_articles_ids = SavesModel.objects.filter(user=self.request.user).values_list('article_id', flat=True)
+        queryset = Articles.objects.filter(id__in=saved_articles_ids).annotate(
+            like_count=Count('likes'),
+            comments_count=Count('post_comment'),
+            views_count=Count('views'),
+            saved_time=F('saves__saved_time')
+        ).order_by('-updated')
+        return queryset
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if self.request.user.is_authenticated:
+            saves = SavesModel.objects.filter(user=self.request.user).values_list('article_id', flat=True)
+            context['saved_articles'] = set(saves)
         
         emojies = EmotionImage.objects.all()
         emotions_count = {}
@@ -506,6 +590,7 @@ class MyNotificationsView(ListView):
             print('context', context['settings'])
         return context
 
+
 class SearchView(ListView):
     model = Articles
     template_name = 'echo/index.html'
@@ -514,13 +599,41 @@ class SearchView(ListView):
     def get_queryset(self):
         queryset = super().get_queryset()
         query = self.request.GET.get('search')
-
+        
         if query:
-            search_query = SearchQuery(query, search_type='plain')
-            search_vector = SearchVector('author__username', 'title', 'content', 'category__name', 'tags')
-            queryset = queryset.annotate(
-                search=search_vector
-            ).filter(search=search_query)
+            # Использование RawSQL для поиска в ArrayField
+            queryset = Articles.objects.annotate(
+                similarity=Greatest(
+                    TrigramSimilarity('title', query),
+                    TrigramSimilarity('content', query)
+                )
+            ).filter(
+                Q(title__icontains=query) |
+                Q(content__icontains=query) |
+                Q(tags__contains=[query]) |
+                Q(id__in=Articles.objects.filter(tags__contains=[query]).values('id'))
+            ).order_by('-similarity')[:10]
+            
+            print('Query:', query)
+            print('QuerySet:', queryset.query)
+            print('Results:', list(queryset))
+        
+        return queryset
+
+
+class SearchByTagView(ListView):
+    model = Articles
+    template_name = 'echo/index.html'
+    context_object_name = 'articles'
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        query = self.request.GET.get('search')
+        
+        if query:
+            queryset = Articles.objects.filter(
+                Q(tags__contains=[query])
+            )
+        
         return queryset
     
     
@@ -646,7 +759,7 @@ class StaffSendMail(UserPassesTestMixin, CreateView):
     model = Notifications
     fields = ['category', 'recipient', 'title', 'notification_text']
     template_name = 'echo/staff_send_mail.html'
-    success_url = reverse_lazy('some_success_url_name')
+    # success_url = reverse_lazy('echo:for_staff')
     
     def test_func(self):
         return self.request.user.is_staff
@@ -655,6 +768,27 @@ class StaffSendMail(UserPassesTestMixin, CreateView):
         form.instance.sender = self.request.user
         return super().form_valid(form)
 
-    
-    
-    
+        
+class InquirySaveAPIView(APIView):
+    model = UserInquiry
+    permission_classes = [IsAuthenticated]
+    def post(self, request, format=None):
+        serializer = InquiriesSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            inquiry = serializer.save(user=request.user)
+            response_serializer = InquiriesSerializer(inquiry)
+            return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        
+    def patch(self, request, pk, format=None):
+        try:
+            inquiry = UserInquiry.objects.get(pk=pk)
+            inquiry.is_resolved = True
+            inquiry.save()
+            return Response({"detail": "Status updated successfully"}, status=status.HTTP_200_OK)
+        except UserInquiry.DoesNotExist:
+            return Response({"detail": "Inquiry not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)

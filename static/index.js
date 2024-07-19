@@ -119,6 +119,7 @@ function openSettings(){
     if (!document.querySelector('.settings-menu')){
         console.log('openSettings')
         const rect = settings.getBoundingClientRect()
+        const position = getElementPosition(settings);
         let menu = document.createElement('div')
         menu.innerHTML = `  <div class="flex-row-between">
                                 <label for="send_message">Отправлять письма</label>
@@ -130,11 +131,11 @@ function openSettings(){
                             </div>`
         menu.className = 'settings-menu'
         menu.classList.add('flex-column-center')
-        
-        console.log(menu.offsetWidth)
         document.querySelector('.title').appendChild(menu)
-        menu.style.top  = (rect.top + window.scrollY + menu.offsetHeight / 2 + settings.offsetHeight/2) + 'px';
-        menu.style.left  = (rect.left + window.scrollX - menu.offsetWidth / 2 + settings.offsetWidth) + 'px';
+        menu.style.position = 'absolute';
+        console.log(position)
+        menu.style.top = `${position.y + settings.offsetHeight - menu.offsetHeight*2}px`;
+        menu.style.left = `${position.x - menu.offsetWidth + 30}px`;
         
         document.getElementById('send_message').checked = messages == 'True'? true : false
         document.getElementById('send_notification').checked = notification == 'True'? true : false
@@ -193,4 +194,16 @@ function reduceNotification(event){
     const parent = message.parentElement
     parent.querySelector('.more').removeAttribute('hidden')
 
+}
+
+function getElementPosition(element) {
+    let x = 0;
+    let y = 0;
+    while (element) {
+        x += element.offsetLeft - element.scrollLeft + element.clientLeft;
+        y += element.offsetTop - element.scrollTop + element.clientTop;
+        element = element.offsetParent;
+    }
+    return { x: x, y: y };
+    
 }

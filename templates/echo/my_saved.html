@@ -5,11 +5,11 @@
 
 {% block content %}
 	<div class="main_wrapper">
-		<h3 class="color-white">Публикации, понравившиеся пользователю: {{ request.user }}</h3>
+		<h3 class="color-white">Сохраненные публикации</h3>
 		<table class="color-white my-table">
 			<thead>
 				<tr>
-					<th>Дата добавления в понравившиеся:</th>
+					<th>Дата сохранения</th>
 					<th>Категория:</th>
 					<th>Наименование:</th>
 					{% if article.images != None %}
@@ -20,7 +20,7 @@
 			<tbody>
 				{% for article in articles %}
 					<tr class="article_row" data-my-article-id="{{ article.pk }}" onclick="row_link(this)">
-						<td>{{article.liked_time}}</td>
+						<td>{{article.saved_time}}</td>
 						<td>{{ article.category.name }}</td>
 						<td class="art_title" >
 							<div data-detail_id="{{ article.pk }}">{{ article.title|truncate_more:100|safe  }}

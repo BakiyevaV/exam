@@ -1,8 +1,8 @@
 html, body {
     margin: 0;
     padding: 0;
-    min-height: 96%;
     width: 100%;
+    min-height: 100%;
 }
 
 .navbar-nav{
@@ -20,13 +20,17 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
+    height: 100%;
+    width: 100%;
 }
-nav{
+nav {
     width: 100%;
     border-bottom: 2px solid black;
     color: white;
+    position: sticky !important;
+    top: 0px;
+    z-index: 100;
 }
-
 .bg-body-tertiary {
     background-color: rgba(0, 0, 0, 0.9) !important;
 }
@@ -42,7 +46,8 @@ main{
     padding: 15px 15px 10px 15px;
     display: flex;
     flex-direction: column;
-
+    position: relative;
+    align-items: center;
 }
 
 .avatar {
@@ -103,7 +108,25 @@ li {
 .photo{
     width: 300px;
     height: 400px;
+    overflow: hidden;
     border: 1px solid grey;
+    position: relative;
+}
+.photo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* либо 'contain', если нужно, чтобы изображение целиком помещалось в контейнер */
+        }
+.mini-photo{
+    width: 150px;
+    height: 150px;
+    border: 1px solid grey;
+    position: relative;
+}
+.xmark-position{
+    position: absolute;
+    top: 0px;
+    right: -10px;
 }
 .user_info_form, .article_form{
     display: flex;
@@ -174,6 +197,8 @@ br{
     height: 400px;
     padding: 5px;
     overflow-y: auto;
+    position: relative;
+    padding-top: 10px;
 }
 .flex-row{
      display: flex;
@@ -280,6 +305,8 @@ br{
     display: flex;
     flex-direction: column;
     align-items: center;
+    position: relative;
+    padding-bottom: 15px;
 }
 .mini_av {
     width: 30px;
@@ -311,6 +338,7 @@ hr{
     padding: 5px;
     background-color: #4f5b69;
     border-radius: 8px;
+    position: relative;
 }
 .article_tags{
     padding: 5px 20px 5px 20px;
@@ -493,8 +521,9 @@ a:hover{
     flex-direction: row;
     align-items: center;
     justify-content: center;
-
-
+    position: absolute;
+    bottom: 5px;
+    margin-top: 10px;
 }
 .step-links{
     display: flex;
@@ -538,4 +567,93 @@ a:hover{
 
 #dropdownMenu.show {
     display: block;
+}
+.close{
+    background-color: transparent;
+    border: none;
+}
+.modal-header{
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+.fa-xmark{
+    position: absolute;
+    right: -4px;
+    top: -4px;
+}
+.tag_text{
+    padding: 0px !important;
+}
+
+
+.icon-wrapper {
+    position: fixed; /* Фиксирует элемент */
+    bottom: 20vh; /* Положение от нижнего края окна просмотра */
+    right: 7vw; /* Положение от правого края окна просмотра */
+    display: inline-block;
+}
+
+
+.icon-wrapper .fa-message {
+    font-size: 3em;
+    color: #B197FC;
+    position: relative;
+    z-index: 10;
+}
+
+.icon-wrapper .ripple {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100px;
+    height: 100px;
+    background: rgba(116, 192, 252, 0.5);
+    border-radius: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    animation: ripple-effect 1s infinite;
+    z-index: 0;
+}
+
+@keyframes ripple-effect {
+    0% {
+        transform: translate(-50%, -50%) scale(0);
+        opacity: 1;
+    }
+    70% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 0.5;
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(1.5);
+        opacity: 0;
+    }
+}
+
+.icon-wrapper:hover .ripple {
+    animation-play-state: running; /* Запуск анимации при наведении */
+}
+
+.icon-wrapper:not(:hover) .ripple {
+    animation-play-state: paused;
+    transform: translate(-50%, -50%) scale(0);
+}
+.message_input{
+    width: 100%;
+    height: 150px;
+}
+.message_subject{
+    width: 100%;
+}
+.left-fixed{
+    position: fixed;
+    left: 20px;
+    top: 100px;
+    gap: 20px;
+}
+.isCompleted{
+    position: absolute;
+    color: white;
+    top: 30px;
+    right: -7px;
 }

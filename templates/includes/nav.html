@@ -55,31 +55,36 @@
 			  		<i class="far fa-user"></i>
 				{% endif %}
 			</div>
+			{% if not request.user.is_superuser and not request.user.is_staff %}
 			<li class="nav-item dropdown">
 				{% if request.user.is_authenticated %}
 					<a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" id="user_name">
 						{{ request.user.username }}
 				    </a>
-					{% if not request.user.is_superuser and not request.user.is_staff %}
 						<ul class="dropdown-menu dropdown-menu-end" id="user_dropdown">
 							<li><a class="dropdown-item" href="{% url 'user:private' request.user.pk %}">Личные данные</a></li>
 							<li><a class="dropdown-item" href="{% url 'echo:my_articles' %}">Мои публикации</a></li>
 							<li><a class="dropdown-item" href="{% url 'echo:my_subscribes' %}">Мои подписки</a></li>
 							<li><a class="dropdown-item" href="{% url 'echo:my_likes' %}">Понравившееся</a></li>
+							<li><a class="dropdown-item" href="{% url 'echo:my_saves' %}">Сохраненные</a></li>
 							<li><a class="dropdown-item" href="{% url 'echo:my_comments' %}">Мои комментарии</a></li>
 							<li><a class="dropdown-item" href="{% url 'echo:my_notifications' %}">Мои уведомления</a></li>
 							<li><hr class="dropdown-divider"></li>
 							<li onclick="exit()"><a class="dropdown-item" id="exit">Выйти</a></li>
 						</ul>
-					{% else %}
-						<button class="btn btn-outline-success" onclick="exit()" id="exit">Выход</button>
-					{% endif %}
 				{% else %}
 					<a class="nav-link" data-bs-toggle="tooltip" title="Авторизуйтесь" role="button" aria-expanded="false">
 						Гость
 					</a>
 				{% endif %}
 			</li>
+			{% else %}
+			<a class="" href="{% url 'echo:for_staff' %}" role="button" id="user_name">
+				{{ request.user.username }}
+			</a>
+			<button class="btn btn-outline-success" onclick="exit()" id="exit">Выход</button>
+			{% endif %}
+			
 		</div>
 	  {% if not request.user.is_authenticated %}
 		<button class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#authorization" id="enter">Вход</button>

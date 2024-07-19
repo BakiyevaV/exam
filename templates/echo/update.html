@@ -1,0 +1,72 @@
+{% extends "layout/basic.html" %}
+{% load static %}
+
+{% block content %}
+	<form class="article_form" id="article_form" method="post" action="">
+		{% if messages %}
+			{% for message in messages %}
+				<div class="alert alert-{{ message.tags }}">
+					{{ message }}
+				</div>
+			{% endfor %}
+		{% endif %}
+		<h3>Редактирование:</h3>
+		<div class="flex-row">
+			{% if images and images|length > 0 %}
+				<div class="photo">
+					<img id="preview" src="{{ images.0.image.url }}">
+				</div>
+				<div class="miniatures" id="miniatures">
+					{% for image in images %}
+						<div class="mini-photo">
+							<img style="height: 150px; width: 150px; object-fit: cover;" src="{{ image.image.url }}">
+							<i class="xmark-position  fa-solid fa-trash fa-lg" data-image-id="{{ image.pk }}" style="color: #ca1616;" onclick="deleteImage(this)"></i>
+						</div>
+					{% endfor %}
+				</div>
+			{% endif %}
+		</div>
+		{% csrf_token %}
+		{{ form.as_p }}
+		<p>Теги:<input type="text" id="tag_area"><button type="button" class="btn btn-primary nowrap" id="add_tag">Добавить тег</button></p>
+		<div class="tags_line" id="tags_line">
+			{% if tags and tags|length > 0 and tags|first != '' %}
+				{% for tag in tags %}
+					<div class="tag-wrapper">
+						<span class="tag_text">#{{ tag }}</span>
+						<i class="fa-solid fa-xmark" style="color: #cfd0d3;"></i>
+					</div>
+				{% endfor %}
+			{% endif %}
+		</div>
+		{{ image_form.as_p }}
+    </div>
+		<div class="flex-row-start">
+			<a><button type="reset" class="btn btn-primary btn-form" id="cancel">Отменить</button></a>
+			<button type="submit" class="btn btn-success btn-form" id="update">Сохранить изменения</button>
+			<a class="nav-link dropdown-toggle" data-bs-toggle="modal" data-bs-target="#customModal">
+				<button type="button" class="btn btn-success btn-form">Удалить публикацию</button>
+			</a>
+		</div>
+	</form>
+    <div class="modal fade" id="customModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h1 class="modal-title fs-5" id="exampleModalLabel">Предупреждение:</h1>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+              <div id="liveAlertPlaceholder"></div>
+              <span>Вы уверены, что хотите удалить запись? Данное изменение будет необратимо.</span>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" aria-label="Close">Отмена</button>
+            <button type="button" class="btn btn-primary" id="delete">Удалить</button>
+          </div>
+        </div>
+      </div>
+    </div>
+	<script src="https://cdn.ckeditor.com/4.16.0/standard/ckeditor.js"></script>
+	<script src="{% static 'update_article.js'%}"></script>
+{% endblock %}

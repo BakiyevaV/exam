@@ -47,6 +47,10 @@
 												<li class="ignor" data-user_id='{{ request.user.pk }}'
 														   data-aut_id='{{ article.author.pk }}'><a class="dropdown-item">Отменить игнор</a></li>
 											{% endif %}
+											<li class="complain" data-user_id='{{ request.user.pk }}'
+														   data-aut_id='{{ article.author.pk }}' data-bs-toggle="modal" data-bs-target="#complainModal">
+												<a class="dropdown-item">Пожаловаться</a>
+											</li>
 										</ul>
 								{% else %}
 									<a href="" data-bs-toggle="modal" data-bs-target="#authorization">
@@ -96,7 +100,7 @@
 				<div class="full-width padding-medium" data-detail_id="{{ article.pk }}"> {{ article.content|truncate_more:100|safe }}</div>
 				<div class="article_tags">
 					{% for tag in article.tags %}
-						<div class="tag-wrapper">#{{ tag }}</div>
+						<a href="{% url 'echo:by_tag' %}?search={{ tag }}">#{{ tag }}</a>
 					{% endfor %}
 				</div>
 				<hr>

@@ -2,9 +2,21 @@ var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggl
 var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
   return new bootstrap.Tooltip(tooltipTriggerEl)
 })
+let messageModal
 
 let username
 clearAlerts()
+
+document.querySelector('main').style.minHeight = window.innerHeight - document.querySelector('nav').offsetHeight + 'px';
+
+document.querySelectorAll('.icon-wrapper').forEach(wrapper => {
+    wrapper.addEventListener('mouseleave', function () {
+        const ripple = wrapper.querySelector('.ripple');
+        ripple.style.animation = 'none'; // Остановить анимацию
+        ripple.offsetHeight; // Вызвать reflow
+        ripple.style.animation = ''; // Перезапустить анимацию
+    });
+});
 
 let subscription = document.querySelector('.subscribe')
 let ignor  = document.querySelector('.ignor')
@@ -32,7 +44,8 @@ if (ignor) {
 
 
 const alertPlaceholder = document.getElementById('liveAlertPlaceholder')
-const appendAlert = (message, type) => {
+function appendAlert(message, type){
+    console.log('appendAlert')
   const wrapper = document.createElement('div')
   wrapper.innerHTML = [
     `<div class="alert alert-${type} alert-dismissible" role="alert">`,
@@ -40,7 +53,6 @@ const appendAlert = (message, type) => {
     '   <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>',
     '</div>'
   ].join('')
-
   alertPlaceholder.append(wrapper)
 }
 
@@ -58,12 +70,14 @@ const appendAlertReg = (message, type) => {
 }
 
 async function authorization(){
+    console.log('authorization')
     const login = document.getElementById('InputLogin').value
     const password = document.getElementById('InputPassword').value
     const mem = document.getElementById('memorize').value
     if (login != "" && password != ""){
         let stat = await getUserData(login, password)
         console.log(stat)
+        clearAlerts()
         if (stat){
             if(stat === 'notConfirmed'){
                 appendAlert('Пользователь не закончил регистрацию!',  'danger')
@@ -285,7 +299,6 @@ async function Subscribe(element){
           }
       })
       .catch(error => console.error('Error CancelSubscribe:', error));
-
 }
 
 async function Ignore(element){
@@ -411,4 +424,65 @@ async function CancelIgnor(element){
 function getComment(comment){
    window.location = window.location.protocol + "//" + window.location.host + "/detail/" + comment.getAttribute("data-post-id") + "/?commentId=" + comment.getAttribute("data-comment-id");
    console.log(window.location.href)
+}
+
+document.querySelector('.icon-wrapper').addEventListener('click', function (){
+    document.getElementById('sendMessage').addEventListener('click', async function (event) {
+        event.preventDefault();
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth' // Добавляет плавную анимацию прокрутки
+        });
+        let form = document.getElementById('inquiry_form')
+        const csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]').value;
+        const token_acc = await refreshToken(localStorage.getItem('refreshToken'));
+        let formData = new FormData(form);
+        const messageResponse = await create_message(csrfToken, token_acc, formData);
+        console.log(typeof(messageResponse))
+        if (messageResponse === 201){
+            appendAlertMain('Обращение успешно создано', 'success')
+        } else {
+            appendAlertMain('Ошибка при создании обращения', 'danger')
+        }
+    })
+})
+
+document.getElementById('sendComplain').addEventListener('click', async function (event) {
+        event.preventDefault();
+        let form = document.getElementById('complainForm')
+        const csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]').value;
+        const token_acc = await refreshToken(localStorage.getItem('refreshToken'));
+        let formData = new FormData(form);
+        formData.append('subject', 'жалоба');
+        const messageResponse = await create_message(csrfToken, token_acc, formData);
+        console.log(typeof(messageResponse))
+        if (messageResponse === 201){
+            appendAlertMain('Обращение успешно создано', 'success')
+        } else {
+            appendAlertMain('Ошибка при создании обращения', 'danger')
+        }
+    })
+async function create_message(csrf_token, token, form_data){
+    console.log(csrf_token)
+    console.log(token)
+    console.log(form_data)
+    try {
+        const response = await fetch(domain + `/api/inquiry/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrf_token,
+                'Authorization': `Bearer ${token}`
+            },
+            body: form_data
+        });
+        if (!response.ok) {
+            throw new Error('Ошибка при отправке формы: ' + response.statusText);
+        }
+        const status = response.status;
+        console.log(status);
+        return status
+    } catch (error) {
+        console.error('Error during form submission:', error);
+        throw error;
+    }
 }

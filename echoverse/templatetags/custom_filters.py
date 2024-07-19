@@ -42,7 +42,7 @@ def paginate(context):
     print('page_obj', page_obj)
 
     if not page_obj:
-        return format_html("<div class='pagination'>No pages.</div>")
+        return format_html('<div class="pagination"><div class="step-links"><div class="page current"><span>0</span></div></div></div>')
 
     html = '<div class="pagination"><div class="step-links">'
 

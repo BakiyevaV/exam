@@ -6,18 +6,27 @@
 {% block content %}
 	<div class="main_wrapper">
 		<h3 class="color-white">Текущие задачи:</h3>
+		<p class="isCompleted">Решено?</p>
 		{% for inquiry in inquiries %}
-		<div class="my_comment">
-			<div class="flex-row-between">
-				<div>
-					<div >{{ inquiry.subject }}:</div>
-					<div >{{ inquiry.message }}</div>
+		<div class="flex-row-between" style="width: 97%; gap: 10px;">
+			<div class="my_comment">
+				<div class="flex-row-between">
+					<div>
+						<div >{{ inquiry.subject }}:</div>
+						<div >{{ inquiry.message }}</div>
+					</div>
+					<div>{{ inquiry.created_at }}</div>
 				</div>
-				<div>{{ inquiry.created_at }}</div>
 			</div>
+			 <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+			<input data-inquiry-id="{{inquiry.pk}}" type="checkbox" style="margin-top: 18px;">
 		</div>
 		{% endfor %}
+		<button class="btn btn-primary" style="margin-top: 20px;" id="save_status">Сохранить статус</button>
 	</div>
-	<a href="{% url 'admin:index' %}"><button type="button">Перейти на страницу администратора</button></a>
-	<a href="{% url 'echo:send_mail' %}"><button type="button">Создать уведомление</button></a>
+	<div class="flex-column-center left-fixed">
+		<a href="{% url 'admin:index' %}" target="_blank"><button type="button" class="btn btn-secondary">Страница администратора</button></a>
+		<a href="{% url 'echo:send_mail' %}"><button type="button" class="btn btn-secondary">Создать уведомление</button></a>
+	</div>
+	 <script src="{% static 'staff_page.js'%}"></script>
 {% endblock %}

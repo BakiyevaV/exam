@@ -6,7 +6,7 @@ from django.core.mail import send_mail
 from django.db import models
 from django.conf import settings
 from django.contrib.postgres.search import SearchVector
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django.urls import reverse
 from django.contrib.auth.models import User
@@ -91,7 +91,7 @@ class Emotions(models.Model):
 
 
 class LikesModel(models.Model):
-	article = models.ForeignKey('Articles', on_delete=models.CASCADE, verbose_name="Статья")
+	article = models.ForeignKey('Articles', on_delete=models.CASCADE, verbose_name="Статья", related_name='likes')
 	user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name="Пользователь")
 	like_time = models.DateTimeField(auto_now_add=True, db_index=True, verbose_name="Поставил лайк")
 	
@@ -104,7 +104,7 @@ class LikesModel(models.Model):
 		return f"{self.user} - {self.article}"
 
 class ViewsModel(models.Model):
-	article = models.ForeignKey('Articles', on_delete=models.CASCADE, verbose_name="Статья")
+	article = models.ForeignKey('Articles', on_delete=models.CASCADE, verbose_name="Статья", related_name='views')
 	user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name="Пользователь")
 	view_time = models.DateTimeField(auto_now=True, db_index=True, verbose_name="Просмотрено")
 	
@@ -148,10 +148,13 @@ class NotificationCategories(models.Model):
 
 class Notifications(models.Model):
 	category = models.ForeignKey('NotificationCategories', default=1, on_delete=models.PROTECT, verbose_name="Категория")
-	recipient = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, verbose_name="Получатель")
+	recipient = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, verbose_name="Получатель",
+								  blank=True, null=True, related_name="received_notifications")
 	title = models.CharField(max_length=200, verbose_name="Заголовок")
 	notification_text = models.TextField(verbose_name="Текст уведомления")
 	send = models.DateTimeField(auto_now_add=True, db_index=True, verbose_name="Отправлено")
+	sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, verbose_name="Отправитель",
+							   blank=True, null=True, related_name="sent_notifications")
 	
 	class Meta:
 		verbose_name = "Уведомления"
@@ -160,13 +163,13 @@ class Notifications(models.Model):
 		return f"{self.recipient} - {self.title}"
 	
 class MessagesSettings(models.Model):
-	user = models.OneToOneField(CustomUserModel, on_delete=models.CASCADE, verbose_name="Получатель", blank=True, null=True)
+	user = models.OneToOneField(CustomUserModel, on_delete=models.CASCADE, verbose_name="Получатель")
 	send_messages = models.BooleanField(default=True, verbose_name="Получать сообщения")
 	send_notification = models.BooleanField(default=True, verbose_name="Получать уведомления")
 
 
 class SavesModel(models.Model):
-	article = models.ForeignKey('Articles', on_delete=models.CASCADE, verbose_name="Статья")
+	article = models.ForeignKey('Articles', on_delete=models.CASCADE, verbose_name="Статья", related_name='saves')
 	user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name="Подписчик")
 	saved_time = models.DateTimeField(auto_now_add=True, db_index=True, verbose_name="Сохранено")
 	
@@ -225,15 +228,16 @@ def send_confirmation_notification(sender, instance, created, **kwargs):
 		author = instance.author
 		subscribers = SubscriptionModel.objects.filter(informator=author)
 		category = NotificationCategories.objects.get(pk=1)
-		
 		emails = []
 		for sub in subscribers:
-			settings = MessagesSettings.objects.filter(user=sub.user).first()
-			if settings and settings.send_messages and sub.user.email:
-				emails.append(sub.user.email)
-				
+			user = sub.user
+			custom_sub_user = CustomUserModel.objects.get(user=user)
+			mes_settings = MessagesSettings.objects.filter(user=custom_sub_user).first()
+			if mes_settings and mes_settings.send_messages and user.email:
+				emails.append(user.email)
+
 		article_url = reverse("echo:article_detail", args=[instance.pk])  # или используйте метод reverse для генерации URL
-		
+
 		if emails:
 			send_mail(
 				subject='Новая публикация от вашего автора',
@@ -242,13 +246,15 @@ def send_confirmation_notification(sender, instance, created, **kwargs):
 				recipient_list=emails,
 				fail_silently=False,
 			)
-		
+
 		for sub in subscribers:
-			settings = MessagesSettings.objects.filter(user=sub.user).first()
-			if settings and settings.send_notification:
+			user = sub.user
+			custom_sub_user = CustomUserModel.objects.get(user=user)
+			mes_settings = MessagesSettings.objects.filter(user=custom_sub_user).first()
+			if mes_settings and mes_settings.send_notification:
 				Notifications.objects.create(
 					category=category,
-					recipient=sub.user,
+					recipient=user,
 					title='Новая публикация от вашего автора',
 					notification_text=f'Привет! {author.username} только что опубликовал новую статью: "<a href="{article_url}">{instance.title}</a>". Приятного чтения!',
 				)
@@ -348,23 +354,13 @@ def send_comments_notification(sender, instance, created, **kwargs):
 				fail_silently=False,
 			)
 			
-			
-
-class UserInquiry(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='inquiries')
-    subject = models.CharField(max_length=255)
-    message = models.TextField()
-    created_at = models.DateTimeField(auto_now_add=True)
-    is_resolved = models.BooleanField(default=False)
-
-    def __str__(self):
-        return f"{self.user.username} - {self.subject}"
 
 
 @receiver(post_save, sender=UserInquiry)
 def send_user_inquiry(sender, instance, created, **kwargs):
 	if created:
 		user = instance.user
+		print(type(user))
 		subject = instance.subject
 		message = instance.message
 		created_at = instance.created_at
@@ -387,3 +383,24 @@ def send_user_inquiry(sender, instance, created, **kwargs):
 				recipient_list=[author_custom_instance.user.email],
 				fail_silently=False,
 			)
+			
+			
+@receiver(pre_save, sender=User)
+def user_pre_save(sender, instance, **kwargs):
+    try:
+        # Получаем предыдущее состояние объекта из базы данных
+        previous_user = User.objects.get(pk=instance.pk)
+    except User.DoesNotExist:
+        # Объект новый, предыдущего состояния нет
+        previous_user = None
+
+    # Проверяем, есть ли предыдущее состояние и изменилось ли поле `is_active`
+    if previous_user and previous_user.is_active != instance.is_active:
+        if not instance.is_active:
+            send_mail(
+                subject='Ваш аккаунт был заблокирован',
+                message=f'Ваш аккаунт был заблокирован, по причине жалоб от посетителей сайта.',
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[instance.email],
+                fail_silently=False,
+            )
