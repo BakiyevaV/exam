@@ -1,4 +1,4 @@
-const domain = 'https://64.226.87.192:8000/';
+const domain = 'https://localhost/';
 
 const mainalertPlaceholder = document.getElementById('liveAlertPlaceholder2')
 const appendAlertMain = (message, type) => {
