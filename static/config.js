@@ -1,4 +1,4 @@
-const domain = 'http://localhost:8000/';
+const domain = 'https://64.226.87.192:8000/';
 
 const mainalertPlaceholder = document.getElementById('liveAlertPlaceholder2')
 const appendAlertMain = (message, type) => {
@@ -23,7 +23,7 @@ function clearAlerts() {
 }
 
 async function refreshToken(refreshToken) {
-    const url = 'http://localhost:8000/user/api/token/refresh/';
+    const url = domain + 'user/api/token/refresh/';
     try {
         const response =  await fetch(url, {
                 method: 'POST',
