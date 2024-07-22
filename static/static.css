@@ -657,3 +657,10 @@ a:hover{
     top: 30px;
     right: -7px;
 }
+
+.empty{
+    width: 20px;
+    height: 20px;
+    background-color: transparent;
+    border: none;
+}
